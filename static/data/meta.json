@@ -1,0 +1,403 @@
+{
+ "built_utc": "2026-10-26T02:49:48Z",
+ "release": "10152026",
+ "sources": [
+  {
+   "file": "College_Scorecard_Raw_Data_10152026.zip",
+   "url": "https://ed-public-download.scorecard.network/downloads/College_Scorecard_Raw_Data_10152026.zip",
+   "retrieved_utc": "2026-10-26T02:29:20Z",
+   "last_modified": "Fri, 09 Oct 2026 00:09:11 GMT",
+   "bytes": "561604015",
+   "sha256": "84058390d0f0c3a9c8d6482342980fb15959d5eedda646309332bd93fa271032"
+  },
+  {
+   "file": "CollegeScorecardDataDictionary.xlsx",
+   "url": "https://collegescorecard.ed.gov/files/CollegeScorecardDataDictionary.xlsx",
+   "retrieved_utc": "2026-10-26T02:29:20Z",
+   "last_modified": "Thu, 22 Oct 2026 21:43:18 GMT",
+   "bytes": "769715",
+   "sha256": "8d258487f252aedc8c87bace61556446d49245bfe374734548bd861118e5cc4c"
+  },
+  {
+   "file": "FieldOfStudyDataDocumentation.pdf",
+   "url": "https://collegescorecard.ed.gov/files/FieldOfStudyDataDocumentation.pdf",
+   "retrieved_utc": "2026-10-26T02:29:21Z",
+   "last_modified": "Thu, 22 Oct 2026 21:43:18 GMT",
+   "bytes": "2261537",
+   "sha256": "2afd04a36d884be04082ed450af060cdbe7d3a35d674c07c10c1c5b3dff3ba43"
+  },
+  {
+   "file": "InstitutionDataDocumentation.pdf",
+   "url": "https://collegescorecard.ed.gov/files/InstitutionDataDocumentation.pdf",
+   "retrieved_utc": "2026-10-26T02:29:21Z",
+   "last_modified": "Thu, 22 Oct 2026 21:43:18 GMT",
+   "bytes": "548951",
+   "sha256": "d4f69b6e7b72464507d3f303c5724749689fbf58a034534ad24f37e65ef75770"
+  },
+  {
+   "file": "CIPCode2020.csv",
+   "url": "https://nces.ed.gov/ipeds/cipcode/Files/CIPCode2020.csv",
+   "retrieved_utc": "2026-10-26T02:29:22Z",
+   "last_modified": "Fri, 16 Jul 2021 21:20:06 GMT",
+   "bytes": "1099448",
+   "sha256": "6cf0882c1f5beb94981d0a1a72285ab5cf633759f45433fb909afbfb6d6b2657"
+  }
+ ],
+ "source_files_in_zip": {
+  "degree_counts": "FieldOfStudyData2021_2122_PP.csv",
+  "earnings": "FieldOfStudyData2122_2223_PP.csv",
+  "attributes": "MERGED2021_22_PP.csv",
+  "costs": {
+   "2017-18": "MERGED2017_18_PP.csv",
+   "2018-19": "MERGED2018_19_PP.csv",
+   "2019-20": "MERGED2019_20_PP.csv",
+   "2020-21": "MERGED2020_21_PP.csv",
+   "2021-22": "MERGED2021_22_PP.csv"
+  },
+  "net_price": {
+   "2017-18": "MERGED2018_19_PP.csv",
+   "2018-19": "MERGED2019_20_PP.csv",
+   "2019-20": "MERGED2020_21_PP.csv",
+   "2020-21": "MERGED2021_22_PP.csv",
+   "2021-22": "MERGED2022_23_PP.csv"
+  }
+ },
+ "scope": {
+  "graduates": "Bachelor's degree completers, award years 2020-21 and 2021-22",
+  "earnings": "Median annual earnings 1 year after completion (measured CY2022 & CY2023), 2024 dollars; federal financial aid recipients who worked and were not enrolled",
+  "costs": "Average published price, academic years 2017-18 to 2021-22, nominal dollars",
+  "schools": "Predominantly bachelor's-granting (PREDDEG=3) public and private institutions with bachelor's completions and published tuition for at least 3 of the 5 years"
+ },
+ "cohort_map_checks": [
+  {
+   "variable": "IPEDSCOUNT1",
+   "file": "FieldOfStudyData2021_2122 datafile",
+   "cohort_map": "AY2020-21 reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "IPEDSCOUNT2",
+   "file": "FieldOfStudyData2021_2122 datafile",
+   "cohort_map": "AY2021-22 reported in IPEDS DCY2022-23"
+  },
+  {
+   "variable": "EARN_MDN_1YR",
+   "file": "FieldOfStudyData2122_2223 datafile",
+   "cohort_map": "Treasury AY2020-21, AY2021-22 pooled earnings cohort measured in CY2022, CY2023, inflation adjusted to 2024 dollars"
+  },
+  {
+   "variable": "EARN_MDN_1YR",
+   "file": "FieldOfStudyData2122_2223 datafile",
+   "cohort_map": "Treasury AY2020-21, AY2021-22 pooled earnings cohort measured in CY2022, CY2023, inflation adjusted to 2024 dollars"
+  },
+  {
+   "variable": "EARN_MDN_1YR_NAT",
+   "file": "FieldOfStudyData2122_2223 datafile",
+   "cohort_map": "Treasury AY2020-21, AY2021-22 pooled earnings cohort measured in CY2022, CY2023, inflation adjusted to 2024 dollars"
+  },
+  {
+   "variable": "EARN_MDN_1YR",
+   "file": "FieldOfStudyData2021_2122 datafile",
+   "cohort_map": "NA"
+  },
+  {
+   "variable": "TUITIONFEE_IN",
+   "file": "Merged2017_18",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2017-18"
+  },
+  {
+   "variable": "TUITIONFEE_OUT",
+   "file": "Merged2017_18",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2017-18"
+  },
+  {
+   "variable": "ROOMBOARD_ON",
+   "file": "Merged2017_18",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2017-18"
+  },
+  {
+   "variable": "BOOKSUPPLY",
+   "file": "Merged2017_18",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2017-18"
+  },
+  {
+   "variable": "OTHEREXPENSE_ON",
+   "file": "Merged2017_18",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2017-18"
+  },
+  {
+   "variable": "TUITIONFEE_IN",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "TUITIONFEE_OUT",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "ROOMBOARD_ON",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "BOOKSUPPLY",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "OTHEREXPENSE_ON",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "TUITIONFEE_IN",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "TUITIONFEE_OUT",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "ROOMBOARD_ON",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "BOOKSUPPLY",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "OTHEREXPENSE_ON",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "TUITIONFEE_IN",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "TUITIONFEE_OUT",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "ROOMBOARD_ON",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "BOOKSUPPLY",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "OTHEREXPENSE_ON",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "TUITIONFEE_IN",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "TUITIONFEE_OUT",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "ROOMBOARD_ON",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "BOOKSUPPLY",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "OTHEREXPENSE_ON",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "NPT4_PUB",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "NPT4_PRIV",
+   "file": "Merged2018_19",
+   "cohort_map": "AcadYr 2017-18, reported in IPEDS DCY2018-19"
+  },
+  {
+   "variable": "NPT4_PUB",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "NPT4_PRIV",
+   "file": "Merged2019_20",
+   "cohort_map": "AcadYr 2018-19, reported in IPEDS DCY2019-20"
+  },
+  {
+   "variable": "NPT4_PUB",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "NPT4_PRIV",
+   "file": "Merged2020_21",
+   "cohort_map": "AcadYr 2019-20, reported in IPEDS DCY2020-21"
+  },
+  {
+   "variable": "NPT4_PUB",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "NPT4_PRIV",
+   "file": "Merged2021_22",
+   "cohort_map": "AcadYr 2020-21, reported in IPEDS DCY2021-22"
+  },
+  {
+   "variable": "NPT4_PUB",
+   "file": "Merged2022_23",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2022-23"
+  },
+  {
+   "variable": "NPT4_PRIV",
+   "file": "Merged2022_23",
+   "cohort_map": "AcadYr 2021-22, reported in IPEDS DCY2022-23"
+  }
+ ],
+ "counts": [
+  {
+   "step": "institutions in MERGED2021_22",
+   "rows": 6543
+  },
+  {
+   "step": "predominantly bachelor's-granting (PREDDEG=3), public/private",
+   "rows": 2004
+  },
+  {
+   "step": "FieldOfStudyData2021_2122_PP.csv rows",
+   "rows": 225205
+  },
+  {
+   "step": "bachelor's rows (CREDLEV=3)",
+   "rows": 72113
+  },
+  {
+   "step": "bachelor's rows with a UNITID (drops foreign/unmatched rows)",
+   "rows": 69948
+  },
+  {
+   "step": "bachelor's rows with one year of IPEDS counts missing (deg set to missing)",
+   "rows": 4430
+  },
+  {
+   "step": "FieldOfStudyData2122_2223_PP.csv rows",
+   "rows": 254167
+  },
+  {
+   "step": "bachelor's rows with a UNITID in earnings file",
+   "rows": 73821,
+   "with_earnings": 25444
+  },
+  {
+   "step": "joined programs (outer join on UNITID + 4-digit CIP)",
+   "rows": 75027,
+   "both": 68742,
+   "counts_only": 1206,
+   "earnings_only": 5079
+  },
+  {
+   "step": "schools with >0 bachelor's degrees reported in AY2020-21 + AY2021-22",
+   "rows": 1973,
+   "dropped": 31
+  },
+  {
+   "step": "schools with published in-state tuition for >= 3 of 5 years",
+   "rows": 1876,
+   "dropped": 97,
+   "dropped_degrees": 44037
+  },
+  {
+   "step": "programs at in-scope schools",
+   "rows": 69570
+  },
+  {
+   "step": "programs dropped: zero/missing degrees and no reported earnings",
+   "rows": 14470
+  },
+  {
+   "step": "earnings values repeated across branch campuses (counted once)",
+   "groups": 609,
+   "rows_blanked": 1168
+  },
+  {
+   "step": "final programs",
+   "rows": 55100,
+   "with_earnings": 22336,
+   "suppressed": 31596,
+   "not_reported": 0,
+   "degrees": 4120193
+  },
+  {
+   "step": "majors (4-digit CIP)",
+   "rows": 363,
+   "titles_not_in_CIP2020": 0
+  }
+ ],
+ "nonnumeric_codes_treated_as_missing": {
+  "UGDS": {
+   "NA": 774
+  },
+  "TUITIONFEE_IN": {
+   "NA": 14492
+  },
+  "TUITIONFEE_OUT": {
+   "NA": 15226
+  },
+  "ROOMBOARD_ON": {
+   "NA": 23844
+  },
+  "BOOKSUPPLY": {
+   "NA": 16450
+  },
+  "OTHEREXPENSE_ON": {
+   "NA": 23831
+  },
+  "NPT4_PUB": {
+   "NA": 23997
+  },
+  "NPT4_PRIV": {
+   "NA": 15416
+  },
+  "IPEDSCOUNT1": {
+   "NA": 5774
+  },
+  "IPEDSCOUNT2": {
+   "NA": 5224
+  },
+  "EARN_MDN_1YR": {
+   "PS": 48377
+  },
+  "EARN_COUNT_WNE_1YR": {
+   "PS": 48377
+  },
+  "EARN_MDN_1YR_NAT": {
+   "PS": 8316
+  }
+ },
+ "outputs": {
+  "schools.csv": 1876,
+  "programs.csv": 55100,
+  "majors.csv": 363
+ }
+}

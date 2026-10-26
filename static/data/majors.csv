@@ -1,0 +1,364 @@
+cip,title,cip2,family,earn_nat
+0100,"Agriculture, General",01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,43778
+0101,Agricultural Business and Management,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,54084
+0102,Agricultural Mechanization,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,61865
+0103,Agricultural Production Operations,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,40871
+0104,Agricultural and Food Products Processing,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,71841
+0105,Agricultural and Domestic Animal Services,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,33298
+0106,Applied Horticulture and Horticultural Business Services,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,48512
+0107,International Agriculture,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,41655
+0108,Agricultural Public Services,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,45991
+0109,Animal Sciences,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,37766
+0110,Food Science and Technology,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,55086
+0111,Plant Sciences,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,44457
+0112,Soil Sciences,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,48415
+0113,Agriculture/Veterinary Preparatory Programs,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,33068
+0181,Veterinary Biomedical and Clinical Sciences,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,44847
+0182,Veterinary Administrative Services,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,
+0183,Veterinary/Animal Health Technologies/Technicians,01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,37416
+0199,"Agricultural/Animal/Plant/Veterinary Science and Related Fields, Other",01,Agricultural/Animal/Plant/Veterinary Science And Related Fields,51245
+0301,Natural Resources Conservation and Research,03,Natural Resources And Conservation,40925
+0302,Environmental/Natural Resources Management and Policy,03,Natural Resources And Conservation,43384
+0303,Fishing and Fisheries Sciences and Management,03,Natural Resources And Conservation,37818
+0305,Forestry,03,Natural Resources And Conservation,46339
+0306,Wildlife and Wildlands Science and Management,03,Natural Resources And Conservation,34340
+0399,"Natural Resources and Conservation, Other",03,Natural Resources And Conservation,36547
+0402,Architecture,04,Architecture And Related Services,55143
+0403,"City/Urban, Community, and Regional Planning",04,Architecture And Related Services,51962
+0404,Environmental Design,04,Architecture And Related Services,47323
+0405,Interior Architecture,04,Architecture And Related Services,49118
+0406,Landscape Architecture,04,Architecture And Related Services,59874
+0408,"Architectural History, Criticism, and Conservation",04,Architecture And Related Services,46764
+0409,Architectural Sciences and Technology,04,Architecture And Related Services,58941
+0410,Real Estate Development,04,Architecture And Related Services,65984
+0499,"Architecture and Related Services, Other",04,Architecture And Related Services,42738
+0501,Area Studies,05,"Area, Ethnic, Cultural, Gender, And Group Studies",38972
+0502,"Ethnic, Cultural Minority, Gender, and Group Studies",05,"Area, Ethnic, Cultural, Gender, And Group Studies",38739
+0599,"Area, Ethnic, Cultural, Gender, and Group Studies, Other",05,"Area, Ethnic, Cultural, Gender, And Group Studies",45787
+0901,Communication and Media Studies,09,"Communication, Journalism, And Related Programs",42882
+0904,Journalism,09,"Communication, Journalism, And Related Programs",41953
+0907,"Radio, Television, and Digital Communication",09,"Communication, Journalism, And Related Programs",37545
+0909,"Public Relations, Advertising, and Applied Communication",09,"Communication, Journalism, And Related Programs",47943
+0910,Publishing,09,"Communication, Journalism, And Related Programs",34293
+0999,"Communication, Journalism, and Related Programs, Other",09,"Communication, Journalism, And Related Programs",40061
+1001,Communications Technologies/Technicians,10,Communications Technologies/Technicians And Support Services,27797
+1002,Audiovisual Communications Technologies/Technicians,10,Communications Technologies/Technicians And Support Services,34374
+1003,Graphic Communications,10,Communications Technologies/Technicians And Support Services,29510
+1099,"Communications Technologies/Technicians and Support Services, Other",10,Communications Technologies/Technicians And Support Services,38116
+1101,"Computer and Information Sciences, General",11,Computer And Information Sciences And Support Services,70762
+1102,Computer Programming,11,Computer And Information Sciences And Support Services,63496
+1103,Data Processing,11,Computer And Information Sciences And Support Services,56601
+1104,Information Science/Studies,11,Computer And Information Sciences And Support Services,65798
+1105,Computer Systems Analysis,11,Computer And Information Sciences And Support Services,65104
+1107,Computer Science,11,Computer And Information Sciences And Support Services,80182
+1108,Computer Software and Media Applications,11,Computer And Information Sciences And Support Services,48533
+1109,Computer Systems Networking and Telecommunications,11,Computer And Information Sciences And Support Services,59944
+1110,Computer/Information Technology Administration and Management,11,Computer And Information Sciences And Support Services,69677
+1199,"Computer and Information Sciences and Support Services, Other",11,Computer And Information Sciences And Support Services,65410
+1203,Funeral Service and Mortuary Science,12,"Culinary, Entertainment, And Personal Services",47611
+1205,Culinary Arts and Related Services,12,"Culinary, Entertainment, And Personal Services",41017
+1301,"Education, General",13,Education,44614
+1302,"Bilingual, Multilingual, and Multicultural Education",13,Education,52960
+1303,Curriculum and Instruction,13,Education,42218
+1304,Educational Administration and Supervision,13,Education,41124
+1305,Educational/Instructional Media Design,13,Education,49005
+1306,"Educational Assessment, Evaluation, and Research",13,Education,39674
+1307,International and Comparative Education,13,Education,55930
+1309,Social and Philosophical Foundations of Education,13,Education,31899
+1310,Special Education and Teaching,13,Education,46673
+1311,Student Counseling and Personnel Services,13,Education,
+1312,"Teacher Education and Professional Development, Specific Levels and Methods",13,Education,44159
+1313,"Teacher Education and Professional Development, Specific Subject Areas",13,Education,45328
+1314,Teaching English or French as a Second or Foreign Language,13,Education,36625
+1315,Teaching Assistants/Aides,13,Education,
+1399,"Education, Other",13,Education,40204
+1401,"Engineering, General",14,Engineering,72868
+1402,"Aerospace, Aeronautical, and Astronautical/Space Engineering",14,Engineering,78673
+1403,Agricultural Engineering,14,Engineering,71049
+1404,Architectural Engineering,14,Engineering,76844
+1405,Biomedical/Medical Engineering,14,Engineering,70896
+1406,Ceramic Sciences and Engineering,14,Engineering,76319
+1407,Chemical Engineering,14,Engineering,80826
+1408,Civil Engineering,14,Engineering,72789
+1409,Computer Engineering,14,Engineering,83729
+1410,"Electrical, Electronics, and Communications Engineering",14,Engineering,82431
+1411,Engineering Mechanics,14,Engineering,73650
+1412,Engineering Physics,14,Engineering,71501
+1413,Engineering Science,14,Engineering,72248
+1414,Environmental/Environmental Health Engineering,14,Engineering,68044
+1418,Materials Engineering,14,Engineering,75940
+1419,Mechanical Engineering,14,Engineering,76194
+1420,Metallurgical Engineering,14,Engineering,79926
+1421,Mining and Mineral Engineering,14,Engineering,84934
+1422,Naval Architecture and Marine Engineering,14,Engineering,117364
+1423,Nuclear Engineering,14,Engineering,77686
+1424,Ocean Engineering,14,Engineering,74149
+1425,Petroleum Engineering,14,Engineering,91915
+1427,Systems Engineering,14,Engineering,82292
+1428,Textile Sciences and Engineering,14,Engineering,54178
+1432,Polymer/Plastics Engineering,14,Engineering,75145
+1433,Construction Engineering,14,Engineering,78954
+1434,Forest Engineering,14,Engineering,59203
+1435,Industrial Engineering,14,Engineering,79132
+1436,Manufacturing Engineering,14,Engineering,75888
+1437,Operations Research,14,Engineering,97876
+1438,Surveying Engineering,14,Engineering,64206
+1439,Geological/Geophysical Engineering,14,Engineering,67287
+1440,Paper Science and Engineering,14,Engineering,87926
+1441,Electromechanical Engineering,14,Engineering,80807
+1442,"Mechatronics, Robotics, and Automation Engineering",14,Engineering,80555
+1443,Biochemical Engineering,14,Engineering,71362
+1444,Engineering Chemistry,14,Engineering,
+1445,Biological/Biosystems Engineering,14,Engineering,66967
+1447,Electrical and Computer Engineering,14,Engineering,84056
+1448,Energy Systems Engineering,14,Engineering,82768
+1499,"Engineering, Other",14,Engineering,75133
+1500,"Engineering Technologies/Technicians, General",15,Engineering/Engineering-Related Technologies/Technicians,66818
+1501,Architectural Engineering Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,66616
+1502,Civil Engineering Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,68112
+1503,Electrical/Electronic Engineering Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,72426
+1504,Electromechanical Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,75335
+1505,Environmental Control Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,58039
+1506,Industrial Production Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,68608
+1507,Quality Control and Safety Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,73581
+1508,Mechanical Engineering Related Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,70230
+1509,Mining and Petroleum Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,51032
+1510,Construction Engineering Technology/Technician,15,Engineering/Engineering-Related Technologies/Technicians,77872
+1511,Engineering-Related Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,67627
+1512,Computer Engineering Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,67260
+1513,Drafting/Design Engineering Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,62497
+1515,Engineering-Related Fields,15,Engineering/Engineering-Related Technologies/Technicians,73960
+1516,Nanotechnology,15,Engineering/Engineering-Related Technologies/Technicians,
+1517,Energy Systems Technologies/Technicians,15,Engineering/Engineering-Related Technologies/Technicians,77937
+1599,"Engineering/Engineering-Related Technologies/Technicians, Other",15,Engineering/Engineering-Related Technologies/Technicians,67011
+1601,"Linguistic, Comparative, and Related Language Studies and Services",16,"Foreign Languages, Literatures, And Linguistics",33703
+1602,"African Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1603,"East Asian Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",36286
+1604,"Slavic, Baltic and Albanian Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",41787
+1605,"Germanic Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",39364
+1606,Modern Greek Language and Literature,16,"Foreign Languages, Literatures, And Linguistics",
+1607,"South Asian Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1608,"Iranian/Persian Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1609,"Romance Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",40236
+1610,"American Indian/Native American Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1611,"Middle/Near Eastern and Semitic Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",43178
+1612,"Classics and Classical Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",33198
+1613,"Celtic Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1614,"Southeast Asian and Australasian/Pacific Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1615,"Turkic, Uralic-Altaic, Caucasian, and Central Asian Languages, Literatures, and Linguistics",16,"Foreign Languages, Literatures, And Linguistics",
+1616,American Sign Language,16,"Foreign Languages, Literatures, And Linguistics",37521
+1699,"Foreign Languages, Literatures, and Linguistics, Other",16,"Foreign Languages, Literatures, And Linguistics",36977
+1901,"Family and Consumer Sciences/Human Sciences, General",19,Family And Consumer Sciences/Human Sciences,38356
+1902,Family and Consumer Sciences/Human Sciences Business Services,19,Family And Consumer Sciences/Human Sciences,46320
+1904,Family and Consumer Economics and Related Studies,19,Family And Consumer Sciences/Human Sciences,43742
+1905,"Foods, Nutrition, and Related Services",19,Family And Consumer Sciences/Human Sciences,38952
+1906,Housing and Human Environments,19,Family And Consumer Sciences/Human Sciences,48638
+1907,"Human Development, Family Studies, and Related Services",19,Family And Consumer Sciences/Human Sciences,38488
+1909,Apparel and Textiles,19,Family And Consumer Sciences/Human Sciences,44102
+1999,"Family and Consumer Sciences/Human Sciences, Other",19,Family And Consumer Sciences/Human Sciences,37801
+2200,Non-Professional Legal Studies,22,Legal Professions And Studies,44728
+2202,Legal Research and Advanced Professional Studies,22,Legal Professions And Studies,47863
+2203,Legal Support Services,22,Legal Professions And Studies,43568
+2299,"Legal Professions and Studies, Other",22,Legal Professions And Studies,44440
+2301,"English Language and Literature, General",23,English Language And Literature/Letters,36147
+2313,Rhetoric and Composition/Writing Studies,23,English Language And Literature/Letters,35087
+2314,Literature,23,English Language And Literature/Letters,35235
+2399,"English Language and Literature/Letters, Other",23,English Language And Literature/Letters,33804
+2401,"Liberal Arts and Sciences, General Studies and Humanities",24,"Liberal Arts And Sciences, General Studies And Humanities",42801
+2501,Library Science and Administration,25,Library Science,32774
+2601,"Biology, General",26,Biological And Biomedical Sciences,36562
+2602,"Biochemistry, Biophysics and Molecular Biology",26,Biological And Biomedical Sciences,43049
+2603,Botany/Plant Biology,26,Biological And Biomedical Sciences,36829
+2604,Cell/Cellular Biology and Anatomical Sciences,26,Biological And Biomedical Sciences,41457
+2605,Microbiological Sciences and Immunology,26,Biological And Biomedical Sciences,41538
+2607,Zoology/Animal Biology,26,Biological And Biomedical Sciences,33118
+2608,Genetics,26,Biological And Biomedical Sciences,41098
+2609,"Physiology, Pathology and Related Sciences",26,Biological And Biomedical Sciences,35467
+2610,Pharmacology and Toxicology,26,Biological And Biomedical Sciences,46329
+2611,"Biomathematics, Bioinformatics, and Computational Biology",26,Biological And Biomedical Sciences,62548
+2612,Biotechnology,26,Biological And Biomedical Sciences,49893
+2613,"Ecology, Evolution, Systematics, and Population Biology",26,Biological And Biomedical Sciences,34501
+2615,Neurobiology and Neurosciences,26,Biological And Biomedical Sciences,37389
+2699,"Biological and Biomedical Sciences, Other",26,Biological And Biomedical Sciences,39104
+2701,Mathematics,27,Mathematics And Statistics,52843
+2703,Applied Mathematics,27,Mathematics And Statistics,66131
+2705,Statistics,27,Mathematics And Statistics,68688
+2706,Applied Statistics,27,Mathematics And Statistics,62525
+2799,"Mathematics and Statistics, Other",27,Mathematics And Statistics,69615
+2805,Military Science and Operational Studies,28,"Military Science, Leadership And Operational Art",71429
+2902,"Intelligence, Command Control and Information Operations",29,Military Technologies And Applied Sciences,60050
+2903,Military Applied Sciences,29,Military Technologies And Applied Sciences,
+2904,Military Systems and Maintenance Technology,29,Military Technologies And Applied Sciences,81792
+2999,"Military Technologies and Applied Sciences, Other",29,Military Technologies And Applied Sciences,
+3000,"Multi-/Interdisciplinary Studies, General",30,Multi/Interdisciplinary Studies,41297
+3001,Biological and Physical Sciences,30,Multi/Interdisciplinary Studies,39311
+3005,Peace Studies and Conflict Resolution,30,Multi/Interdisciplinary Studies,41300
+3006,Systems Science and Theory,30,Multi/Interdisciplinary Studies,67084
+3008,Mathematics and Computer Science,30,Multi/Interdisciplinary Studies,76818
+3010,Biopsychology,30,Multi/Interdisciplinary Studies,39345
+3011,Gerontology,30,Multi/Interdisciplinary Studies,42094
+3012,Historic Preservation and Conservation,30,Multi/Interdisciplinary Studies,31353
+3013,Medieval and Renaissance Studies,30,Multi/Interdisciplinary Studies,26921
+3014,Museology/Museum Studies,30,Multi/Interdisciplinary Studies,30075
+3015,"Science, Technology and Society",30,Multi/Interdisciplinary Studies,47447
+3016,Accounting and Computer Science,30,Multi/Interdisciplinary Studies,
+3017,Behavioral Sciences,30,Multi/Interdisciplinary Studies,39719
+3018,Natural Sciences,30,Multi/Interdisciplinary Studies,39088
+3019,Nutrition Sciences,30,Multi/Interdisciplinary Studies,36429
+3020,International/Globalization Studies,30,Multi/Interdisciplinary Studies,42221
+3021,Holocaust and Related Studies,30,Multi/Interdisciplinary Studies,
+3022,Classical and Ancient Studies,30,Multi/Interdisciplinary Studies,33774
+3023,Intercultural/Multicultural and Diversity Studies,30,Multi/Interdisciplinary Studies,35131
+3025,Cognitive Science,30,Multi/Interdisciplinary Studies,48492
+3026,Cultural Studies/Critical Theory and Analysis,30,Multi/Interdisciplinary Studies,40083
+3027,Human Biology,30,Multi/Interdisciplinary Studies,36711
+3028,Dispute Resolution,30,Multi/Interdisciplinary Studies,
+3029,Maritime Studies,30,Multi/Interdisciplinary Studies,38741
+3030,Computational Science,30,Multi/Interdisciplinary Studies,75740
+3031,Human Computer Interaction,30,Multi/Interdisciplinary Studies,40091
+3032,Marine Sciences,30,Multi/Interdisciplinary Studies,38130
+3033,Sustainability Studies,30,Multi/Interdisciplinary Studies,44710
+3034,Anthrozoology,30,Multi/Interdisciplinary Studies,
+3036,Cultural Studies and Comparative Literature,30,Multi/Interdisciplinary Studies,
+3038,Earth Systems Science,30,Multi/Interdisciplinary Studies,44413
+3039,Economics and Computer Science,30,Multi/Interdisciplinary Studies,
+3041,Environmental Geosciences,30,Multi/Interdisciplinary Studies,41338
+3044,Geography and Environmental Studies,30,Multi/Interdisciplinary Studies,40570
+3045,History and Language/Literature,30,Multi/Interdisciplinary Studies,
+3046,History and Political Science,30,Multi/Interdisciplinary Studies,33924
+3047,Linguistics and Anthropology,30,Multi/Interdisciplinary Studies,
+3049,Mathematical Economics,30,Multi/Interdisciplinary Studies,
+3051,"Philosophy, Politics, and Economics",30,Multi/Interdisciplinary Studies,45916
+3052,Digital Humanities and Textual Studies,30,Multi/Interdisciplinary Studies,
+3070,Data Science,30,Multi/Interdisciplinary Studies,76968
+3071,Data Analytics,30,Multi/Interdisciplinary Studies,66895
+3099,"Multi/Interdisciplinary Studies, Other",30,Multi/Interdisciplinary Studies,47819
+3101,"Parks, Recreation, and Leisure Studies",31,"Parks, Recreation, Leisure, Fitness, And Kinesiology",40789
+3103,"Parks, Recreation, and Leisure Facilities Management",31,"Parks, Recreation, Leisure, Fitness, And Kinesiology",39350
+3105,"Sports, Kinesiology, and Physical Education/Fitness",31,"Parks, Recreation, Leisure, Fitness, And Kinesiology",37216
+3106,Outdoor Education,31,"Parks, Recreation, Leisure, Fitness, And Kinesiology",33572
+3199,"Parks, Recreation, Leisure, Fitness, and Kinesiology, Other",31,"Parks, Recreation, Leisure, Fitness, And Kinesiology",39127
+3401,Health-Related Knowledge and Skills,34,Health-Related Knowledge And Skills,42866
+3601,Leisure and Recreational Activities,36,Leisure And Recreational Activities,30597
+3800,"Philosophy and Religious Studies, General",38,Philosophy And Religious Studies,32431
+3801,Philosophy,38,Philosophy And Religious Studies,37154
+3802,Religion/Religious Studies,38,Philosophy And Religious Studies,28307
+3899,"Philosophy and Religious Studies, Other",38,Philosophy And Religious Studies,31918
+3902,Bible/Biblical Studies,39,Theology And Religious Vocations,38041
+3903,Missions/Missionary Studies and Missiology,39,Theology And Religious Vocations,29880
+3904,Religious Education,39,Theology And Religious Vocations,36920
+3905,Religious Music and Worship,39,Theology And Religious Vocations,35829
+3906,Theological and Ministerial Studies,39,Theology And Religious Vocations,36786
+3907,Pastoral Counseling and Specialized Ministries,39,Theology And Religious Vocations,35268
+3908,Religious Institution Administration and Law,39,Theology And Religious Vocations,
+3999,"Theology and Religious Vocations, Other",39,Theology And Religious Vocations,36157
+4001,"Physical Sciences, General",40,Physical Sciences,49783
+4002,Astronomy and Astrophysics,40,Physical Sciences,41014
+4004,Atmospheric Sciences and Meteorology,40,Physical Sciences,44128
+4005,Chemistry,40,Physical Sciences,47486
+4006,Geological and Earth Sciences/Geosciences,40,Physical Sciences,45534
+4008,Physics,40,Physical Sciences,52079
+4010,Materials Sciences,40,Physical Sciences,75777
+4011,Physics and Astronomy,40,Physical Sciences,39054
+4099,"Physical Sciences, Other",40,Physical Sciences,51413
+4100,"Science Technologies/Technicians, General",41,Science Technologies/Technicians,64275
+4101,Biology/Biotechnology Technologies/Technicians,41,Science Technologies/Technicians,62001
+4102,Nuclear and Industrial Radiologic Technologies/Technicians,41,Science Technologies/Technicians,
+4199,"Science Technologies/Technicians, Other",41,Science Technologies/Technicians,58441
+4201,"Psychology, General",42,Psychology,37251
+4227,Research and Experimental Psychology,42,Psychology,38319
+4228,"Clinical, Counseling and Applied Psychology",42,Psychology,40105
+4299,"Psychology, Other",42,Psychology,40236
+4301,Criminal Justice and Corrections,43,"Homeland Security, Law Enforcement, Firefighting And Related Protective Services",43365
+4302,Fire Protection,43,"Homeland Security, Law Enforcement, Firefighting And Related Protective Services",80581
+4303,Homeland Security,43,"Homeland Security, Law Enforcement, Firefighting And Related Protective Services",58220
+4304,Security Science and Technology,43,"Homeland Security, Law Enforcement, Firefighting And Related Protective Services",46655
+4399,"Homeland Security, Law Enforcement, Firefighting and Related Protective Services, Other",43,"Homeland Security, Law Enforcement, Firefighting And Related Protective Services",52393
+4400,"Human Services, General",44,Public Administration And Social Service Professions,41637
+4402,Community Organization and Advocacy,44,Public Administration And Social Service Professions,45679
+4404,Public Administration,44,Public Administration And Social Service Professions,50470
+4405,Public Policy Analysis,44,Public Administration And Social Service Professions,53031
+4407,Social Work,44,Public Administration And Social Service Professions,41160
+4499,"Public Administration and Social Service Professions, Other",44,Public Administration And Social Service Professions,46100
+4501,"Social Sciences, General",45,Social Sciences,43758
+4502,Anthropology,45,Social Sciences,34245
+4503,Archeology,45,Social Sciences,30319
+4504,Criminology,45,Social Sciences,42035
+4505,Demography,45,Social Sciences,
+4506,Economics,45,Social Sciences,60917
+4507,Geography and Cartography,45,Social Sciences,44734
+4509,International Relations and National Security Studies,45,Social Sciences,45779
+4510,Political Science and Government,45,Social Sciences,43306
+4511,Sociology,45,Social Sciences,40712
+4512,Urban Studies/Affairs,45,Social Sciences,46328
+4513,Sociology and Anthropology,45,Social Sciences,37664
+4599,"Social Sciences, Other",45,Social Sciences,43502
+4604,"Building/Construction Finishing, Management, and Inspection",46,Construction Trades,75419
+4699,"Construction Trades, Other",46,Construction Trades,69823
+4701,Electrical/Electronics Maintenance and Repair Technologies/Technicians,47,Mechanic And Repair Technologies/Technicians,28052
+4703,Heavy/Industrial Equipment Maintenance Technologies/Technicians,47,Mechanic And Repair Technologies/Technicians,
+4706,Vehicle Maintenance and Repair Technologies/Technicians,47,Mechanic And Repair Technologies/Technicians,71209
+4805,Precision Metal Working,48,Precision Production,
+4807,Woodworking,48,Precision Production,33155
+4901,Air Transportation,49,Transportation And Materials Moving,55780
+4902,Ground Transportation,49,Transportation And Materials Moving,24526
+4903,Marine Transportation,49,Transportation And Materials Moving,105731
+4999,"Transportation and Materials Moving, Other",49,Transportation And Materials Moving,
+5001,"Visual and Performing Arts, General",50,Visual And Performing Arts,30671
+5002,"Crafts/Craft Design, Folk Art and Artisanry",50,Visual And Performing Arts,24265
+5003,Dance,50,Visual And Performing Arts,28513
+5004,Design and Applied Arts,50,Visual And Performing Arts,39422
+5005,Drama/Theatre Arts and Stagecraft,50,Visual And Performing Arts,29768
+5006,Film/Video and Photographic Arts,50,Visual And Performing Arts,31110
+5007,Fine and Studio Arts,50,Visual And Performing Arts,31108
+5009,Music,50,Visual And Performing Arts,33156
+5010,"Arts, Entertainment, and Media Management",50,Visual And Performing Arts,37052
+5011,Community/Environmental/Socially-Engaged Art,50,Visual And Performing Arts,
+5099,"Visual and Performing Arts, Other",50,Visual And Performing Arts,34413
+5100,"Health Services/Allied Health/Health Sciences, General",51,Health Professions And Related Programs,40940
+5102,Communication Disorders Sciences and Services,51,Health Professions And Related Programs,32846
+5106,Dental Support Services and Allied Professions,51,Health Professions And Related Programs,69638
+5107,Health and Medical Administrative Services,51,Health Professions And Related Programs,50300
+5108,Allied Health and Medical Assisting Services,51,Health Professions And Related Programs,47668
+5109,"Allied Health Diagnostic, Intervention, and Treatment Professions",51,Health Professions And Related Programs,69634
+5110,Clinical/Medical Laboratory Science/Research and Allied Professions,51,Health Professions And Related Programs,69014
+5111,Health/Medical Preparatory Programs,51,Health Professions And Related Programs,36985
+5112,Medicine,51,Health Professions And Related Programs,36015
+5115,Mental and Social Health Services and Allied Professions,51,Health Professions And Related Programs,41521
+5118,Ophthalmic and Optometric Support Services and Allied Professions,51,Health Professions And Related Programs,
+5120,"Pharmacy, Pharmaceutical Sciences, and Administration",51,Health Professions And Related Programs,58869
+5122,Public Health,51,Health Professions And Related Programs,42733
+5123,Rehabilitation and Therapeutic Professions,51,Health Professions And Related Programs,38781
+5127,Medical Illustration and Informatics,51,Health Professions And Related Programs,49283
+5131,Dietetics and Clinical Nutrition Services,51,Health Professions And Related Programs,39341
+5132,"Health Professions Education, Ethics, and Humanities",51,Health Professions And Related Programs,42366
+5133,Alternative and Complementary Medicine and Medical Systems,51,Health Professions And Related Programs,36347
+5134,Alternative and Complementary Medical Support Services,51,Health Professions And Related Programs,43799
+5135,Somatic Bodywork and Related Therapeutic Services,51,Health Professions And Related Programs,
+5136,Movement and Mind-Body Therapies and Education,51,Health Professions And Related Programs,38528
+5138,"Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing",51,Health Professions And Related Programs,84093
+5139,"Practical Nursing, Vocational Nursing and Nursing Assistants",51,Health Professions And Related Programs,28357
+5199,"Health Professions and Related Clinical Sciences, Other",51,Health Professions And Related Programs,44416
+5201,"Business/Commerce, General",52,"Business, Management, Marketing, And Related Support Services",54795
+5202,"Business Administration, Management and Operations",52,"Business, Management, Marketing, And Related Support Services",55206
+5203,Accounting and Related Services,52,"Business, Management, Marketing, And Related Support Services",60798
+5204,Business Operations Support and Assistant Services,52,"Business, Management, Marketing, And Related Support Services",46606
+5205,Business/Corporate Communications,52,"Business, Management, Marketing, And Related Support Services",50777
+5206,Business/Managerial Economics,52,"Business, Management, Marketing, And Related Support Services",56982
+5207,Entrepreneurial and Small Business Operations,52,"Business, Management, Marketing, And Related Support Services",47020
+5208,Finance and Financial Management Services,52,"Business, Management, Marketing, And Related Support Services",63115
+5209,Hospitality Administration/Management,52,"Business, Management, Marketing, And Related Support Services",46331
+5210,Human Resources Management and Services,52,"Business, Management, Marketing, And Related Support Services",55804
+5211,International Business,52,"Business, Management, Marketing, And Related Support Services",56014
+5212,Management Information Systems and Services,52,"Business, Management, Marketing, And Related Support Services",65673
+5213,Management Sciences and Quantitative Methods,52,"Business, Management, Marketing, And Related Support Services",68249
+5214,Marketing,52,"Business, Management, Marketing, And Related Support Services",52121
+5215,Real Estate,52,"Business, Management, Marketing, And Related Support Services",62470
+5216,Taxation,52,"Business, Management, Marketing, And Related Support Services",
+5217,Insurance,52,"Business, Management, Marketing, And Related Support Services",67182
+5218,"General Sales, Merchandising and Related Marketing Operations",52,"Business, Management, Marketing, And Related Support Services",58823
+5219,"Specialized Sales, Merchandising and  Marketing Operations",52,"Business, Management, Marketing, And Related Support Services",48389
+5220,Construction Management,52,"Business, Management, Marketing, And Related Support Services",75379
+5221,Telecommunications Management,52,"Business, Management, Marketing, And Related Support Services",
+5299,"Business, Management, Marketing, and Related Support Services, Other",52,"Business, Management, Marketing, And Related Support Services",54462
+5401,History,54,History,38156

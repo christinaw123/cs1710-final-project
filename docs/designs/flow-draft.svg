@@ -1,0 +1,170 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 680' width='1000' height='680' font-family='system-ui, -apple-system, Segoe UI, sans-serif'>
+<rect width='1000' height='680' fill='#fffdf8'/>
+<rect x='8' y='8' width='984' height='664' fill='none' stroke='#9a6b00' stroke-width='1.5' stroke-dasharray='6 5' rx='10'/>
+<text x='32' y='44' font-size='12' font-weight='700' fill='#9a6b00' letter-spacing='0.08em'>DESIGN DRAFT · NOT YET INTERACTIVE</text>
+<text x='32' y='74' font-size='24' font-weight='700' fill='#1d1c1a'>Where do graduates of different-priced schools end up?</text>
+<text x='32' y='98' font-size='14' fill='#52514e'>Degrees awarded 2020–21 + 2021–22 → field → earnings band (1 yr after); link width = degrees</text>
+<path d='M264,359.1910500309088C388.5,359.1910500309088,388.5,519.2266842839643,513,519.2266842839643' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='42.1'/>
+<path d='M527,553.5349441154822C651.5,553.5349441154822,651.5,499.8789139246633,776,499.8789139246633' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='16.6'/>
+<path d='M264,383.72941607347036C388.5,383.72941607347036,388.5,406.12755227728417,513,406.12755227728417' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='7.0'/>
+<path d='M527,404.3935645733101C651.5,404.3935645733101,651.5,450.98067250733163,776,450.98067250733163' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='9.3'/>
+<path d='M264,333.01496167776605C388.5,333.01496167776605,388.5,374.95199520993316,513,374.95199520993316' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='10.3'/>
+<path d='M527,382.9403947824775C651.5,382.9403947824775,651.5,490.1352363833442,776,490.1352363833442' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.4'/>
+<path d='M527,372.00070530676595C651.5,372.00070530676595,651.5,431.20239221803445,776,431.20239221803445' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='14.6'/>
+<path d='M527,475.59879889121703C651.5,475.59879889121703,651.5,443.2212893910553,776,443.2212893910553' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='3.8'/>
+<path d='M264,315.34771550750173C388.5,315.34771550750173,388.5,306.70331074296763,513,306.70331074296763' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='9.4'/>
+<path d='M527,307.02750720657986C651.5,307.02750720657986,651.5,145.0184450097362,776,145.0184450097362' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='10.9'/>
+<path d='M264,323.9602120580274C388.5,323.9602120580274,388.5,341.9852171973498,513,341.9852171973498' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='7.8'/>
+<path d='M527,342.4549806283347C651.5,342.4549806283347,651.5,158.76010031568913,776,158.76010031568913' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='12.7'/>
+<path d='M527,530.620691312276C651.5,530.620691312276,651.5,178.78985620333805,776,178.78985620333805' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='24.6'/>
+<path d='M264,305.84933521318055C388.5,305.84933521318055,388.5,270.5224124209715,513,270.5224124209715' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='9.6'/>
+<path d='M527,280.5790986004781C651.5,280.5790986004781,651.5,481.81145252176304,776,481.81145252176304' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='2.3'/>
+<path d='M264,389.38068726392186C388.5,389.38068726392186,388.5,432.58314112955395,513,432.58314112955395' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='4.3'/>
+<path d='M527,438.6190146917875C651.5,438.6190146917875,651.5,519.4533921105153,776,519.4533921105153' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='2.3'/>
+<path d='M264,276.9120664978558C388.5,276.9120664978558,388.5,166.38439461452413,513,166.38439461452413' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='22.3'/>
+<path d='M527,146.8514115722249C651.5,146.8514115722249,651.5,316.8115391681895,776,316.8115391681895' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='33.7'/>
+<path d='M527,191.26190205167575C651.5,191.26190205167575,651.5,472.2198125184914,776,472.2198125184914' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='4.5'/>
+<path d='M264,220.39913227365807C388.5,220.39913227365807,388.5,475.67853302017653,513,475.67853302017653' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='45.0'/>
+<path d='M527,496.77021391959073C651.5,496.77021391959073,651.5,264.4136374194121,776,264.4136374194121' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='36.1'/>
+<path d='M264,246.03874769944034C388.5,246.03874769944034,388.5,399.4977220727282,513,399.4977220727282' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.3'/>
+<path d='M264,194.89969863062242C388.5,194.89969863062242,388.5,366.8246244775427,513,366.8246244775427' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.0'/>
+<path d='M527,364.2392349096269C651.5,364.2392349096269,651.5,348.0532911929126,776,348.0532911929126' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M264,180.1194958585678C388.5,180.1194958585678,388.5,298.6194389437582,513,298.6194389437582' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.8'/>
+<path d='M527,315.4249720826184C651.5,315.4249720826184,651.5,485.4822281383421,776,485.4822281383421' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='2.0'/>
+<path d='M264,187.7089743126111C388.5,187.7089743126111,388.5,333.8671139919902,513,333.8671139919902' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='8.4'/>
+<path d='M527,461.65926935946936C651.5,461.65926935946936,651.5,356.9929064002584,776,356.9929064002584' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='17.0'/>
+<path d='M264,173.1154996865438C388.5,173.1154996865438,388.5,262.1039077538357,513,262.1039077538357' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='7.2'/>
+<path d='M527,277.2632442218119C651.5,277.2632442218119,651.5,137.37774468331946,776,137.37774468331946' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='3.5'/>
+<path d='M264,251.46588667084288C388.5,251.46588667084288,388.5,428.1345611722558,513,428.1345611722558' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='4.6'/>
+<path d='M527,431.5569503661601C651.5,431.5569503661601,651.5,197.0340268040842,776,197.0340268040842' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.8'/>
+<path d='M264,162.36771481335947C388.5,162.36771481335947,388.5,213.92753155009964,513,213.92753155009964' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='14.3'/>
+<path d='M527,243.40565648259678C651.5,243.40565648259678,651.5,477.59330837171956,776,477.59330837171956' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='3.7'/>
+<path d='M527,234.59019274097105C651.5,234.59019274097105,651.5,223.85188412290393,776,223.85188412290393' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='3.7'/>
+<path d='M527,239.1173379499455C651.5,239.1173379499455,651.5,133.1619800334596,776,133.1619800334596' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='4.3'/>
+<path d='M527,219.38597973444442C651.5,219.38597973444442,651.5,407.6768583413447,776,407.6768583413447' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='19.6'/>
+<path d='M264,142.61932438601784C388.5,142.61932438601784,388.5,142.61932438601784,513,142.61932438601784' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='25.2'/>
+<path d='M527,184.20626655110576C651.5,184.20626655110576,651.5,218.2189810040452,776,218.2189810040452' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.5'/>
+<path d='M527,298.3134853148869C651.5,298.3134853148869,651.5,236.96885801223388,776,236.96885801223388' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='4.0'/>
+<path d='M264,294.55368085912477C388.5,294.55368085912477,388.5,227.552466110204,513,227.552466110204' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='13.0'/>
+<path d='M527,411.6986301369863C651.5,411.6986301369863,651.5,193.47500420490013,776,193.47500420490013' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,412.60229751373305C651.5,412.60229751373305,651.5,517.096142340905,776,517.096142340905' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.5'/>
+<path d='M527,188.45997796705154C651.5,188.45997796705154,651.5,130.48967609041614,776,130.48967609041614' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,270.62422998145956C651.5,270.62422998145956,651.5,230.11790127307142,776,230.11790127307142' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='7.8'/>
+<path d='M527,426.0175574299554C651.5,426.0175574299554,651.5,372.56468956672654,776,372.56468956672654' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,172.30254553609504C651.5,172.30254553609504,651.5,389.23898807652944,776,389.23898807652944' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='8.6'/>
+<path d='M527,397.9192367930338C651.5,397.9192367930338,651.5,370.56494926329907,776,370.56494926329907' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='3.1'/>
+<path d='M527,260.2070286513277C651.5,260.2070286513277,651.5,342.4949040008563,776,342.4949040008563' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='3.4'/>
+<path d='M527,208.0859003449595C651.5,208.0859003449595,651.5,339.25544410176906,776,339.25544410176906' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='2.6'/>
+<path d='M264,428.1846297005991C388.5,428.1846297005991,388.5,545.8143426776368,513,545.8143426776368' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='11.1'/>
+<path d='M264,434.2599946167571C388.5,434.2599946167571,388.5,410.15362484233145,513,410.15362484233145' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M264,422.2685243142737C388.5,422.2685243142737,388.5,380.4565305557289,513,380.4565305557289' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M264,418.7886931510248C388.5,418.7886931510248,388.5,312.20250264975454,513,312.20250264975454' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.6'/>
+<path d='M264,420.7470635477514C388.5,420.7470635477514,388.5,347.05689223781513,513,347.05689223781513' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='2.3'/>
+<path d='M264,417.43843116087044C388.5,417.43843116087044,388.5,275.8718627986601,513,275.8718627986601' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.1'/>
+<path d='M264,435.67216535730256C388.5,435.67216535730256,388.5,435.6205104955036,513,435.6205104955036' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.8'/>
+<path d='M264,413.597709136441C388.5,413.597709136441,388.5,237.33939211100056,513,237.33939211100056' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.6'/>
+<path d='M264,406.91774244556024C388.5,406.91774244556024,388.5,180.9190496658773,513,180.9190496658773' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='6.8'/>
+<path d='M527,350.77726164769473C651.5,350.77726164769473,651.5,488.3620495447665,776,488.3620495447665' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.3'/>
+<path d='M527,411.46752639985556C651.5,411.46752639985556,651.5,286.06642116036795,776,286.06642116036795' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,427.0242947357078C651.5,427.0242947357078,651.5,286.8349997196733,776,286.8349997196733' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.2'/>
+<path d='M527,332.28921315093737C651.5,332.28921315093737,651.5,242.4548165583505,776,242.4548165583505' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='4.5'/>
+<path d='M527,329.70161106530696C651.5,329.70161106530696,651.5,347.3066290826668,776,347.3066290826668' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,295.6469422670249C651.5,295.6469422670249,651.5,346.6101034587458,776,346.6101034587458' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,382.1453495018316C651.5,382.1453495018316,651.5,246.30213439030646,776,246.30213439030646' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,264.37361696405964C651.5,264.37361696405964,651.5,421.4763730728148,776,421.4763730728148' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,296.32096700324473C651.5,296.32096700324473,651.5,423.8640136517877,776,423.8640136517877' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M527,382.20742523469175C651.5,382.20742523469175,651.5,166.4611230590412,776,166.4611230590412' fill='none' stroke='#bdbbb3' stroke-opacity='0.45' stroke-width='1.0'/>
+<path d='M264,492.86993643258955C388.5,492.86993643258955,388.5,560.6833801232127,513,560.6833801232127' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='18.6'/>
+<path d='M527,544.075345499592C651.5,544.075345499592,651.5,192.24451039065406,776,192.24451039065406' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='2.3'/>
+<path d='M527,565.9239996767144C651.5,565.9239996767144,651.5,512.2679694858955,776,512.2679694858955' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='8.2'/>
+<path d='M264,481.7779171995099C388.5,481.7779171995099,388.5,382.5956177295579,513,382.5956177295579' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='3.6'/>
+<path d='M527,384.0118795405944C651.5,384.0118795405944,651.5,491.2067211414611,776,491.2067211414611' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M264,474.0491753662996C388.5,474.0491753662996,388.5,315.3330064878029,513,315.3330064878029' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='4.7'/>
+<path d='M527,317.05179878709555C651.5,317.05179878709555,651.5,487.10905484281926,776,487.10905484281926' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.2'/>
+<path d='M264,478.1907997999123C388.5,478.1907997999123,388.5,350.026383230106,513,350.026383230106' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='3.6'/>
+<path d='M527,351.6286217660193C651.5,351.6286217660193,651.5,489.21340966309106,776,489.21340966309106' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M264,468.3129518447316C388.5,468.3129518447316,388.5,279.82784447233416,513,279.82784447233416' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='6.8'/>
+<path d='M527,282.4759359573689C651.5,282.4759359573689,651.5,483.70828987865383,776,483.70828987865383' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.5'/>
+<path d='M527,279.2340548124808C651.5,279.2340548124808,651.5,139.3485552739884,776,139.3485552739884' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M264,507.6720556537037C388.5,507.6720556537037,388.5,438.837678234976,513,438.837678234976' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='4.7'/>
+<path d='M527,440.4550286843359C651.5,440.4550286843359,651.5,521.2894061030637,776,521.2894061030637' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.4'/>
+<path d='M264,461.9792650489917C388.5,461.9792650489917,388.5,243.55781925749588,513,243.55781925749588' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='5.9'/>
+<path d='M527,245.86388890035002C651.5,245.86388890035002,651.5,480.0515407894728,776,480.0515407894728' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.2'/>
+<path d='M527,230.94488195091824C651.5,230.94488195091824,651.5,419.23576055781854,776,419.23576055781854' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='3.6'/>
+<path d='M264,453.80664206749543C388.5,453.80664206749543,388.5,189.55321219175897,513,189.55321219175897' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='10.5'/>
+<path d='M527,187.71243919884338C651.5,187.71243919884338,651.5,221.72515365178282,776,221.72515365178282' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,194.16514274938095C651.5,194.16514274938095,651.5,475.1230532161965,776,475.1230532161965' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.3'/>
+<path d='M527,380.71005168932624C651.5,380.71005168932624,651.5,439.91173860059473,776,439.91173860059473' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='2.8'/>
+<path d='M527,471.9180043264964C651.5,471.9180043264964,651.5,367.2516413672854,776,367.2516413672854' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='3.5'/>
+<path d='M527,262.9191579132336C651.5,262.9191579132336,651.5,345.20703326276225,776,345.20703326276225' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='2.0'/>
+<path d='M264,503.76533380839203C388.5,503.76533380839203,388.5,412.2553496887161,513,412.2553496887161' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='3.2'/>
+<path d='M527,413.59429861659396C651.5,413.59429861659396,651.5,518.088143443766,776,518.088143443766' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,349.47513235423685C651.5,349.47513235423685,651.5,165.7802520415913,776,165.7802520415913' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.3'/>
+<path d='M527,241.41317991657183C651.5,241.41317991657183,651.5,135.45782200008594,776,135.45782200008594' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,478.1073347777641C651.5,478.1073347777641,651.5,445.72982527760234,776,445.72982527760234' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.2'/>
+<path d='M527,427.8975713030919C651.5,427.8975713030919,651.5,287.7082762870574,776,287.7082762870574' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,516.5764220268323C651.5,516.5764220268323,651.5,284.2198455266537,776,284.2198455266537' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='3.5'/>
+<path d='M527,335.3098425243672C651.5,335.3098425243672,651.5,245.47544593178037,776,245.47544593178037' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.6'/>
+<path d='M527,436.2290363582483C651.5,436.2290363582483,651.5,201.70611279617242,776,201.70611279617242' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='2.5'/>
+<path d='M527,165.8553524070353C651.5,165.8553524070353,651.5,335.8154800029999,776,335.8154800029999' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='4.3'/>
+<path d='M527,178.7775829918647C651.5,178.7775829918647,651.5,395.71402553229916,776,395.71402553229916' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='4.4'/>
+<path d='M527,313.45011216707564C651.5,313.45011216707564,651.5,151.441049970232,776,151.441049970232' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.9'/>
+<path d='M527,410.2043457672978C651.5,410.2043457672978,651.5,456.79145370131937,776,456.79145370131937' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='2.3'/>
+<path d='M527,275.0011327139286C651.5,275.0011327139286,651.5,234.49480400554052,776,234.49480400554052' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,236.7180503437581C651.5,236.7180503437581,651.5,225.97974172569099,776,225.97974172569099' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,209.4884278479187C651.5,209.4884278479187,651.5,340.6579716047283,776,340.6579716047283' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,426.29908987273177C651.5,426.29908987273177,651.5,372.8462220095029,776,372.8462220095029' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,300.92692793759903C651.5,300.92692793759903,651.5,239.58230063494597,776,239.58230063494597' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.3'/>
+<path d='M527,265.79142336293467C651.5,265.79142336293467,651.5,422.8941794716898,776,422.8941794716898' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.9'/>
+<path d='M527,296.1822463171021C651.5,296.1822463171021,651.5,347.14540750882304,776,347.14540750882304' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,399.6015016772273C651.5,399.6015016772273,651.5,372.24721414749257,776,372.24721414749257' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,329.89372439592034C651.5,329.89372439592034,651.5,347.4987424132802,776,347.4987424132802' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,188.97081908541665C651.5,188.97081908541665,651.5,131.00051720878125,776,131.00051720878125' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,411.5963116290912C651.5,411.5963116290912,651.5,286.1952063896036,776,286.1952063896036' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,330.05047918871765C651.5,330.05047918871765,651.5,423.8835506006636,776,423.8835506006636' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,364.66278594230903C651.5,364.66278594230903,651.5,348.47684222559474,776,348.47684222559474' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,411.81635277764906C651.5,411.81635277764906,651.5,193.59272684556282,776,193.59272684556282' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<path d='M527,426.40003077525745C651.5,426.40003077525745,651.5,457.94705587820766,776,457.94705587820766' fill='none' stroke='#1d1c1a' stroke-opacity='0.55' stroke-width='1.0'/>
+<rect x='250' y='130' width='14' height='123.76632065536734' rx='2' fill='#52514e'/>
+<text x='242' y='195.88316032768367' text-anchor='end' font-size='12' fill='#1d1c1a'>Lowest 25% tuition (&lt; $9.72K)</text>
+<rect x='250' y='265.76632065536734' width='14' height='125.76251258132817' rx='2' fill='#52514e'/>
+<text x='242' y='332.64757694603145' text-anchor='end' font-size='12' fill='#1d1c1a'>Second 25% ($9.72K–$18.4K)</text>
+<rect x='250' y='403.5288332366955' width='14' height='33.032555513782995' rx='2' fill='#52514e'/>
+<text x='242' y='424.045110993587' text-anchor='end' font-size='12' fill='#1d1c1a'>Third 25% ($18.4K–$33.7K)</text>
+<rect x='250' y='448.5613887504785' width='14' height='61.4386112495215' rx='2' fill='#52514e'/>
+<text x='242' y='483.28069437523925' text-anchor='end' font-size='12' fill='#1d1c1a'>Highest 25% (≥ $33.7K)</text>
+<rect x='513' y='130' width='14' height='64.79846550877585' rx='2' fill='#52514e'/>
+<text x='535' y='166.39923275438792' text-anchor='start' font-size='12' fill='#1d1c1a'>Business</text>
+<rect x='513' y='206.79846550877585' width='14' height='39.68672341319933' rx='2' fill='#52514e'/>
+<text x='535' y='230.6418272153755' text-anchor='start' font-size='12' fill='#1d1c1a'>Health</text>
+<rect x='513' y='258.4851889219752' width='14' height='24.74897268161959' rx='2' fill='#52514e'/>
+<text x='535' y='274.859675262785' text-anchor='start' font-size='12' fill='#1d1c1a'>Social sciences</text>
+<rect x='513' y='295.23416160359477' width='14' height='22.428751274515605' rx='2' fill='#52514e'/>
+<text x='535' y='310.4485372408526' text-anchor='start' font-size='12' fill='#1d1c1a'>Biology</text>
+<rect x='513' y='329.6629128781104' width='14' height='22.175188395300893' rx='2' fill='#52514e'/>
+<text x='535' y='344.7505070757608' text-anchor='start' font-size='12' fill='#1d1c1a'>Psychology</text>
+<rect x='513' y='363.83810127341127' width='14' height='20.532915812438887' rx='2' fill='#52514e'/>
+<text x='535' y='378.1045591796307' text-anchor='start' font-size='12' fill='#1d1c1a'>Engineering</text>
+<rect x='513' y='396.37101708585016' width='14' height='17.46311010188117' rx='2' fill='#52514e'/>
+<text x='535' y='409.10257213679074' text-anchor='start' font-size='12' fill='#1d1c1a'>Computer science</text>
+<rect x='513' y='425.8341271877313' width='14' height='15.33149539354099' rx='2' fill='#52514e'/>
+<text x='535' y='437.4998748845018' text-anchor='start' font-size='12' fill='#1d1c1a'>Visual &amp; performing arts</text>
+<rect x='513' y='453.1656225812723' width='14' height='116.83437741872768' rx='2' fill='#52514e'/>
+<text x='535' y='515.5828112906362' text-anchor='start' font-size='12' fill='#1d1c1a'>Other fields</text>
+<rect x='776' y='130' width='14' height='72.97067103409961' rx='2' fill='#52514e'/>
+<text x='798' y='170.4853355170498' text-anchor='start' font-size='12' fill='#1d1c1a'>Under $39.2K</text>
+<rect x='776' y='214.9706710340996' width='14' height='72.98945656186498' rx='2' fill='#52514e'/>
+<text x='798' y='255.4653993150321' text-anchor='start' font-size='12' fill='#1d1c1a'>$39.2K–$48.1K</text>
+<rect x='776' y='299.9601275959646' width='14' height='72.98419661409065' rx='2' fill='#52514e'/>
+<text x='798' y='340.4522259030099' text-anchor='start' font-size='12' fill='#1d1c1a'>$48.1K–$65.5K</text>
+<rect x='776' y='384.94432421005524' width='14' height='73.00557037012595' rx='2' fill='#52514e'/>
+<text x='798' y='425.4471093951182' text-anchor='start' font-size='12' fill='#1d1c1a'>$65.5K or more</text>
+<rect x='776' y='469.9498945801812' width='14' height='52.05010541981892' rx='2' fill='#52514e'/>
+<text x='798' y='499.97494729009065' text-anchor='start' font-size='12' fill='#1d1c1a'>Earnings not reported</text>
+<text x='250' y='122' text-anchor='end' font-size='12' font-weight='700' fill='#52514e'>TUITION GROUP (schools)</text>
+<text x='520' y='122' text-anchor='middle' font-size='12' font-weight='700' fill='#52514e'>FIELD</text>
+<text x='804' y='122' font-size='12' font-weight='700' fill='#52514e'>EARNINGS BAND</text>
+<text x='32' y='606' font-size='12.5' font-weight='400' fill='#52514e'>Shown highlighted: degrees from the highest-tuition quartile (what a brush on the histogram would highlight; the national flows stay visible in gray).</text>
+<text x='32' y='623' font-size='12.5' font-weight='400' fill='#52514e'>Tuition groups = quartiles of schools by published in-state tuition; earnings bands = degree-weighted quartiles of program medians.</text>
+<text x='32' y='640' font-size='12.5' font-weight='400' fill='#52514e'>Interaction: brush the histogram to highlight; hover a link for degrees and share; click a field to select it in the earnings chart.</text>
+</svg>

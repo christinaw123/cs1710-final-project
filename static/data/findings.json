@@ -1,0 +1,630 @@
+{
+ "scope": {
+  "schools": 1876,
+  "schools_by_control": {
+   "Public": 546,
+   "Private nonprofit": 1181,
+   "Private for-profit": 149
+  },
+  "degrees": 4120193,
+  "programs": 55100,
+  "programs_with_earnings": 22336,
+  "degree_share_in_programs_with_earnings": 0.8486915540121542,
+  "degree_share_in_dup_programs": 0.013671204237277234
+ },
+ "tuition_by_control": {
+  "weighting": "each school counts once",
+  "values": {
+   "Public": {
+    "schools": 546,
+    "tuition_in_median": 8804.0,
+    "tuition_in_p25": 7475.25,
+    "tuition_in_p75": 11125.0,
+    "tuition_out_median": 19463.5,
+    "net_price_median": 14243.0,
+    "net_price_schools": 543
+   },
+   "Private nonprofit": {
+    "schools": 1181,
+    "tuition_in_median": 30531.0,
+    "tuition_in_p25": 17190.0,
+    "tuition_in_p75": 39917.0,
+    "tuition_out_median": 30531.0,
+    "net_price_median": 21873.0,
+    "net_price_schools": 1139
+   },
+   "Private for-profit": {
+    "schools": 149,
+    "tuition_in_median": 17640.0,
+    "tuition_in_p25": 13556.0,
+    "tuition_in_p75": 19575.0,
+    "tuition_out_median": 17644.0,
+    "net_price_median": 23432.0,
+    "net_price_schools": 124
+   }
+  }
+ },
+ "top20_majors": {
+  "weighting": "share = degrees (weighted by degrees); p25/p50/p75 = quantiles of program medians, each program counts once",
+  "values": [
+   {
+    "cip": "5202",
+    "deg": 317849.0,
+    "share": 0.07714420174006412,
+    "programs_earn": 1023,
+    "p25": 46289.5,
+    "p50": 51317.0,
+    "p75": 57357.5,
+    "title": "Business Administration, Management and Operations",
+    "iqr": 11068.0
+   },
+   {
+    "cip": "5138",
+    "deg": 278378.0,
+    "share": 0.0675643107009793,
+    "programs_earn": 788,
+    "p25": 76268.5,
+    "p50": 80271.0,
+    "p75": 86862.0,
+    "title": "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing",
+    "iqr": 10593.5
+   },
+   {
+    "cip": "4201",
+    "deg": 226279.0,
+    "share": 0.05491951469263697,
+    "programs_earn": 869,
+    "p25": 34139.0,
+    "p50": 37176.0,
+    "p75": 40068.0,
+    "title": "Psychology, General",
+    "iqr": 5929.0
+   },
+   {
+    "cip": "2601",
+    "deg": 173630.0,
+    "share": 0.04214122979190538,
+    "programs_earn": 788,
+    "p25": 33534.75,
+    "p50": 37258.5,
+    "p75": 41032.25,
+    "title": "Biology, General",
+    "iqr": 7497.5
+   },
+   {
+    "cip": "1312",
+    "deg": 102570.0,
+    "share": 0.024894464895212434,
+    "programs_earn": 661,
+    "p25": 41135.0,
+    "p50": 44377.0,
+    "p75": 47242.0,
+    "title": "Teacher Education and Professional Development, Specific Levels and Methods",
+    "iqr": 6107.0
+   },
+   {
+    "cip": "0901",
+    "deg": 101916.0,
+    "share": 0.024735734466807744,
+    "programs_earn": 557,
+    "p25": 37810.0,
+    "p50": 41856.0,
+    "p75": 45837.0,
+    "title": "Communication and Media Studies",
+    "iqr": 8027.0
+   },
+   {
+    "cip": "4301",
+    "deg": 99202.0,
+    "share": 0.024077027459635993,
+    "programs_earn": 540,
+    "p25": 39722.0,
+    "p50": 42599.0,
+    "p75": 46579.0,
+    "title": "Criminal Justice and Corrections",
+    "iqr": 6857.0
+   },
+   {
+    "cip": "3105",
+    "deg": 96395.0,
+    "share": 0.023395748694296604,
+    "programs_earn": 501,
+    "p25": 33467.0,
+    "p50": 37203.0,
+    "p75": 40556.0,
+    "title": "Sports, Kinesiology, and Physical Education/Fitness",
+    "iqr": 7089.0
+   },
+   {
+    "cip": "5203",
+    "deg": 94806.0,
+    "share": 0.023010087148830165,
+    "programs_earn": 570,
+    "p25": 54225.5,
+    "p50": 59474.5,
+    "p75": 65523.75,
+    "title": "Accounting and Related Services",
+    "iqr": 11298.25
+   },
+   {
+    "cip": "5208",
+    "deg": 93765.0,
+    "share": 0.02275742908159885,
+    "programs_earn": 401,
+    "p25": 53797.0,
+    "p50": 59277.0,
+    "p75": 65765.0,
+    "title": "Finance and Financial Management Services",
+    "iqr": 11968.0
+   },
+   {
+    "cip": "5214",
+    "deg": 87163.0,
+    "share": 0.021155076958773535,
+    "programs_earn": 465,
+    "p25": 45870.0,
+    "p50": 50411.0,
+    "p75": 55073.0,
+    "title": "Marketing",
+    "iqr": 9203.0
+   },
+   {
+    "cip": "4510",
+    "deg": 84841.0,
+    "share": 0.020591511125813765,
+    "programs_earn": 482,
+    "p25": 38631.5,
+    "p50": 43190.0,
+    "p75": 46905.25,
+    "title": "Political Science and Government",
+    "iqr": 8273.75
+   },
+   {
+    "cip": "1101",
+    "deg": 80814.0,
+    "share": 0.019614129726447282,
+    "programs_earn": 372,
+    "p25": 56821.25,
+    "p50": 65726.5,
+    "p75": 75381.75,
+    "title": "Computer and Information Sciences, General",
+    "iqr": 18560.5
+   },
+   {
+    "cip": "1107",
+    "deg": 79880.0,
+    "share": 0.0193874413164626,
+    "programs_earn": 346,
+    "p25": 64363.75,
+    "p50": 73700.5,
+    "p75": 86227.75,
+    "title": "Computer Science",
+    "iqr": 21864.0
+   },
+   {
+    "cip": "2401",
+    "deg": 76593.0,
+    "share": 0.018589663154128945,
+    "programs_earn": 363,
+    "p25": 37639.0,
+    "p50": 42363.0,
+    "p75": 46472.5,
+    "title": "Liberal Arts and Sciences, General Studies and Humanities",
+    "iqr": 8833.5
+   },
+   {
+    "cip": "4506",
+    "deg": 75284.0,
+    "share": 0.018271959590242495,
+    "programs_earn": 323,
+    "p25": 51836.0,
+    "p50": 58619.0,
+    "p75": 68939.0,
+    "title": "Economics",
+    "iqr": 17103.0
+   },
+   {
+    "cip": "1419",
+    "deg": 70595.0,
+    "share": 0.01713390610585475,
+    "programs_earn": 304,
+    "p25": 72531.5,
+    "p50": 75781.0,
+    "p75": 79161.0,
+    "title": "Mechanical Engineering",
+    "iqr": 6629.5
+   },
+   {
+    "cip": "2301",
+    "deg": 59111.0,
+    "share": 0.014346658032766912,
+    "programs_earn": 429,
+    "p25": 33180.0,
+    "p50": 37131.0,
+    "p75": 40732.0,
+    "title": "English Language and Literature, General",
+    "iqr": 7552.0
+   },
+   {
+    "cip": "4511",
+    "deg": 56906.0,
+    "share": 0.013811488927824498,
+    "programs_earn": 380,
+    "p25": 37279.0,
+    "p50": 40567.0,
+    "p75": 44271.75,
+    "title": "Sociology",
+    "iqr": 6992.75
+   },
+   {
+    "cip": "5401",
+    "deg": 49077.0,
+    "share": 0.011911335221432588,
+    "programs_earn": 362,
+    "p25": 34076.5,
+    "p50": 38250.0,
+    "p75": 43056.5,
+    "title": "History",
+    "iqr": 8980.0
+   }
+  ]
+ },
+ "between_vs_within": {
+  "description": "Among the 20 most-awarded majors: gap between the highest and lowest 'median program' vs. the typical (median) within-major interquartile range of program medians",
+  "highest_major": "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing",
+  "highest_p50": 80271.0,
+  "lowest_major": "English Language and Literature, General",
+  "lowest_p50": 37131.0,
+  "between_gap": 43140.0,
+  "median_within_iqr": 8553.625,
+  "min_within_iqr": 5929.0,
+  "max_within_iqr": 21864.0
+ },
+ "popularity_vs_earnings": {
+  "description": "Spearman rank correlation across majors with >= 30 programs reporting earnings, between degrees awarded and the median program's earnings",
+  "majors": 127,
+  "spearman": -0.03327123172103487,
+  "most_popular": "Business Administration, Management and Operations",
+  "most_popular_share": 0.07714420174006412,
+  "most_popular_p50": 51317.0,
+  "most_popular_rank_by_p50_in_top20": 8
+ },
+ "tuition_vs_earnings_within_major": {
+  "description": "Spearman rank correlation between a school's average published in-state tuition and the program's median earnings, computed separately within each of the 20 most-awarded majors (each program counts once)",
+  "median_spearman": 0.24509052111381607,
+  "min_spearman": 0.06719475641751115,
+  "max_spearman": 0.6351138698956363,
+  "values": [
+   {
+    "cip": "5202",
+    "programs": 1023,
+    "spearman": 0.21368649057420463,
+    "title": "Business Administration, Management and Operations"
+   },
+   {
+    "cip": "5138",
+    "programs": 788,
+    "spearman": 0.17587138240450123,
+    "title": "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing"
+   },
+   {
+    "cip": "4201",
+    "programs": 869,
+    "spearman": 0.20899978801307137,
+    "title": "Psychology, General"
+   },
+   {
+    "cip": "2601",
+    "programs": 788,
+    "spearman": 0.17032482535759833,
+    "title": "Biology, General"
+   },
+   {
+    "cip": "1312",
+    "programs": 661,
+    "spearman": 0.11980955331248193,
+    "title": "Teacher Education and Professional Development, Specific Levels and Methods"
+   },
+   {
+    "cip": "0901",
+    "programs": 557,
+    "spearman": 0.23374024201337093,
+    "title": "Communication and Media Studies"
+   },
+   {
+    "cip": "4301",
+    "programs": 540,
+    "spearman": 0.13949660017062607,
+    "title": "Criminal Justice and Corrections"
+   },
+   {
+    "cip": "3105",
+    "programs": 501,
+    "spearman": 0.06719475641751115,
+    "title": "Sports, Kinesiology, and Physical Education/Fitness"
+   },
+   {
+    "cip": "5203",
+    "programs": 570,
+    "spearman": 0.4993651628304191,
+    "title": "Accounting and Related Services"
+   },
+   {
+    "cip": "5208",
+    "programs": 401,
+    "spearman": 0.5436733129101955,
+    "title": "Finance and Financial Management Services"
+   },
+   {
+    "cip": "5214",
+    "programs": 465,
+    "spearman": 0.36270546721657904,
+    "title": "Marketing"
+   },
+   {
+    "cip": "4510",
+    "programs": 482,
+    "spearman": 0.4622243333198043,
+    "title": "Political Science and Government"
+   },
+   {
+    "cip": "1101",
+    "programs": 372,
+    "spearman": 0.343079953380896,
+    "title": "Computer and Information Sciences, General"
+   },
+   {
+    "cip": "1107",
+    "programs": 346,
+    "spearman": 0.4712797030690877,
+    "title": "Computer Science"
+   },
+   {
+    "cip": "2401",
+    "programs": 363,
+    "spearman": 0.22533581963433783,
+    "title": "Liberal Arts and Sciences, General Studies and Humanities"
+   },
+   {
+    "cip": "4506",
+    "programs": 323,
+    "spearman": 0.6351138698956363,
+    "title": "Economics"
+   },
+   {
+    "cip": "1419",
+    "programs": 304,
+    "spearman": 0.3691628744162211,
+    "title": "Mechanical Engineering"
+   },
+   {
+    "cip": "2301",
+    "programs": 429,
+    "spearman": 0.3545284794557379,
+    "title": "English Language and Literature, General"
+   },
+   {
+    "cip": "4511",
+    "programs": 380,
+    "spearman": 0.2237780604862639,
+    "title": "Sociology"
+   },
+   {
+    "cip": "5401",
+    "programs": 362,
+    "spearman": 0.2564408002142612,
+    "title": "History"
+   }
+  ]
+ },
+ "tuition_quartiles": {
+  "description": "Schools split into quartiles by average published in-state tuition (each school counts once); median of program medians within each quartile (each program counts once)",
+  "edges": [
+   9717.5,
+   18372.5,
+   33698.5
+  ],
+  "all_programs_p50": {
+   "1": 43428.0,
+   "2": 45982.5,
+   "3": 44767.5,
+   "4": 48257.0
+  },
+  "programs": {
+   "1": 7829,
+   "2": 7002,
+   "3": 2568,
+   "4": 4937
+  }
+ },
+ "tuition_quartile_gap_within_major": {
+  "description": "Within each of the 20 most-awarded majors (>= 10 reporting programs in both quartiles): median program earnings at schools in the highest in-state tuition quartile minus the lowest quartile (each program counts once)",
+  "majors": 20,
+  "median_gap": 5164.75,
+  "min_gap": 954.0,
+  "max_gap": 17056.5,
+  "negative_gaps": 0,
+  "values": [
+   {
+    "cip": "5202",
+    "q1_programs": 296,
+    "q4_programs": 252,
+    "q1_p50": 48961.0,
+    "q4_p50": 54037.5,
+    "gap": 5076.5,
+    "title": "Business Administration, Management and Operations"
+   },
+   {
+    "cip": "5138",
+    "q1_programs": 249,
+    "q4_programs": 166,
+    "q1_p50": 78836.0,
+    "q4_p50": 84089.0,
+    "gap": 5253.0,
+    "title": "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing"
+   },
+   {
+    "cip": "4201",
+    "q1_programs": 260,
+    "q4_programs": 263,
+    "q1_p50": 36058.0,
+    "q4_p50": 38554.0,
+    "gap": 2496.0,
+    "title": "Psychology, General"
+   },
+   {
+    "cip": "2601",
+    "q1_programs": 256,
+    "q4_programs": 258,
+    "q1_p50": 36284.5,
+    "q4_p50": 38206.0,
+    "gap": 1921.5,
+    "title": "Biology, General"
+   },
+   {
+    "cip": "1312",
+    "q1_programs": 233,
+    "q4_programs": 130,
+    "q1_p50": 43905.0,
+    "q4_p50": 46292.5,
+    "gap": 2387.5,
+    "title": "Teacher Education and Professional Development, Specific Levels and Methods"
+   },
+   {
+    "cip": "0901",
+    "q1_programs": 195,
+    "q4_programs": 157,
+    "q1_p50": 40685.0,
+    "q4_p50": 44658.0,
+    "gap": 3973.0,
+    "title": "Communication and Media Studies"
+   },
+   {
+    "cip": "4301",
+    "q1_programs": 213,
+    "q4_programs": 84,
+    "q1_p50": 41471.0,
+    "q4_p50": 42425.0,
+    "gap": 954.0,
+    "title": "Criminal Justice and Corrections"
+   },
+   {
+    "cip": "3105",
+    "q1_programs": 171,
+    "q4_programs": 99,
+    "q1_p50": 36737.0,
+    "q4_p50": 38305.0,
+    "gap": 1568.0,
+    "title": "Sports, Kinesiology, and Physical Education/Fitness"
+   },
+   {
+    "cip": "5203",
+    "q1_programs": 215,
+    "q4_programs": 138,
+    "q1_p50": 55167.0,
+    "q4_p50": 68014.5,
+    "gap": 12847.5,
+    "title": "Accounting and Related Services"
+   },
+   {
+    "cip": "5208",
+    "q1_programs": 134,
+    "q4_programs": 115,
+    "q1_p50": 54766.5,
+    "q4_p50": 66562.0,
+    "gap": 11795.5,
+    "title": "Finance and Financial Management Services"
+   },
+   {
+    "cip": "5214",
+    "q1_programs": 154,
+    "q4_programs": 128,
+    "q1_p50": 47493.5,
+    "q4_p50": 54423.5,
+    "gap": 6930.0,
+    "title": "Marketing"
+   },
+   {
+    "cip": "4510",
+    "q1_programs": 155,
+    "q4_programs": 178,
+    "q1_p50": 40215.0,
+    "q4_p50": 46988.0,
+    "gap": 6773.0,
+    "title": "Political Science and Government"
+   },
+   {
+    "cip": "1101",
+    "q1_programs": 151,
+    "q4_programs": 68,
+    "q1_p50": 62226.0,
+    "q4_p50": 73864.5,
+    "gap": 11638.5,
+    "title": "Computer and Information Sciences, General"
+   },
+   {
+    "cip": "1107",
+    "q1_programs": 113,
+    "q4_programs": 120,
+    "q1_p50": 68203.0,
+    "q4_p50": 84685.5,
+    "gap": 16482.5,
+    "title": "Computer Science"
+   },
+   {
+    "cip": "2401",
+    "q1_programs": 170,
+    "q4_programs": 49,
+    "q1_p50": 41265.0,
+    "q4_p50": 48723.0,
+    "gap": 7458.0,
+    "title": "Liberal Arts and Sciences, General Studies and Humanities"
+   },
+   {
+    "cip": "4506",
+    "q1_programs": 72,
+    "q4_programs": 144,
+    "q1_p50": 51692.5,
+    "q4_p50": 68749.0,
+    "gap": 17056.5,
+    "title": "Economics"
+   },
+   {
+    "cip": "1419",
+    "q1_programs": 104,
+    "q4_programs": 73,
+    "q1_p50": 73443.5,
+    "q4_p50": 78841.0,
+    "gap": 5397.5,
+    "title": "Mechanical Engineering"
+   },
+   {
+    "cip": "2301",
+    "q1_programs": 167,
+    "q4_programs": 110,
+    "q1_p50": 35826.0,
+    "q4_p50": 40529.5,
+    "gap": 4703.5,
+    "title": "English Language and Literature, General"
+   },
+   {
+    "cip": "4511",
+    "q1_programs": 147,
+    "q4_programs": 92,
+    "q1_p50": 39579.0,
+    "q4_p50": 42602.5,
+    "gap": 3023.5,
+    "title": "Sociology"
+   },
+   {
+    "cip": "5401",
+    "q1_programs": 147,
+    "q4_programs": 74,
+    "q1_p50": 36960.0,
+    "q4_p50": 41836.0,
+    "gap": 4876.0,
+    "title": "History"
+   }
+  ]
+ }
+}
