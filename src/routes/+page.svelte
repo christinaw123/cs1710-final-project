@@ -19,9 +19,6 @@
 	import EarningsByMajor from '$lib/components/EarningsByMajor.svelte';
 	import MajorScatter from '$lib/components/MajorScatter.svelte';
 	import SchoolSearch from '$lib/components/SchoolSearch.svelte';
-	import billDraft from '../../docs/designs/dollar-bill-draft.svg?url';
-	import brainDraft from '../../docs/designs/brain-draft.svg?url';
-	import flowDraft from '../../docs/designs/flow-draft.svg?url';
 
 	let data = $state(null);
 	let loadError = $state(null);
@@ -507,141 +504,16 @@
 			</div>
 		</section>
 
-		<!-- 5. EXPLORE -->
+		<!-- 5. EXPLORE (placeholder) -->
 		<section class="wrap" id="explore">
 			<p class="step ui">4 · Explore further</p>
-			<h2>Three views in design</h2>
-			<p class="prose">
-				These are design drafts for the next milestone, not finished charts. Each sketch is drawn from the same cleaned
-				data, so its numbers are real, but none is interactive yet.
-			</p>
-			<div class="drafts">
-				{#each [
-					{
-						img: billDraft,
-						title: 'Where does a year of college cost go?',
-						q: 'How much of the published yearly cost is tuition versus room and board, books and other expenses, and how does that change for the schools you select?',
-						enc: 'A dollar bill whose length is the total published yearly cost (one dollar scale for every bill), split into four segments by cost item. Each school counts once.',
-						int: 'Brushing the histogram rebuilds a “selection” bill under the all-schools bill. Hover a segment for its amount and school count.'
-					},
-					{
-						img: brainDraft,
-						title: 'The brain of majors',
-						novel: true,
-						q: 'What do students study, and how much do those fields pay, at the schools you select?',
-						enc: 'Region area = share of bachelor’s degrees (weighted by degrees); color = median program earnings one year out (each program counts once; one-hue scale; gray = not reported).',
-						int: 'Hover a region for exact values; click to select that field in the earnings chart; brushing tuition recomputes areas while the outline and color scale stay fixed.'
-					},
-					{
-						img: flowDraft,
-						title: 'Where do graduates of different-priced schools end up?',
-						q: 'How do degrees flow from tuition groups to fields to early-earnings bands?',
-						enc: 'Three columns (tuition quartile of schools → field → earnings band of the program), link width = degrees. Unreported earnings get their own band.',
-						int: 'Brushing the histogram highlights the matching flows while all-schools flows stay visible in gray; hover a link for degrees and share.'
-					}
-				] as d (d.title)}
-					<article class="draft">
-						<p class="badge ui">{d.novel ? 'Design draft · proposed novel view' : 'Design draft'}</p>
-						<h3>{d.title}</h3>
-						<img src={d.img} alt="Design draft: {d.title}" loading="lazy" />
-						<dl class="ui">
-							<dt>Question</dt><dd>{d.q}</dd>
-							<dt>Encoding</dt><dd>{d.enc}</dd>
-							<dt>Interaction</dt><dd>{d.int}</dd>
-						</dl>
-					</article>
-				{/each}
-			</div>
+			<div class="placeholder ui">Placeholder: content coming soon.</div>
 		</section>
 
-		<!-- 6. TAKEAWAY + METHODS -->
+		<!-- 6. TAKEAWAY + METHODS (placeholder) -->
 		<section class="wrap" id="methods">
 			<p class="step ui">5 · Takeaway</p>
-			<h2>Compare programs, not just price tags</h2>
-			<p class="prose">
-				If you are choosing a college, look up the specific program you would study, not just the school’s reputation
-				or sticker price. Compare what you would actually pay after grants (the Scorecard’s net price, or a college’s
-				net price calculator) and weigh both against your interests and career goals. Early earnings are only one part
-				of what college is worth.
-			</p>
-
-			<h3>Limits of these data</h3>
-			<ul class="prose">
-				<li>
-					<strong>Early earnings.</strong> One year after graduation is early; rankings can change by year five or ten,
-					especially for majors that lead to graduate school.
-				</li>
-				<li>
-					<strong>Who is counted.</strong> Earnings cover graduates who received federal aid, worked, and were not
-					enrolled in school. Students who never borrowed or received a Pell grant are not included.
-				</li>
-				<li>
-					<strong>Missing data.</strong> {fmtInt(data.programs.filter((p) => p.note === 'PS').length)} of
-					{fmtInt(f.scope.programs)} programs have earnings suppressed for privacy (mostly small programs). Suppressed values
-					are treated as missing, never as zero. Earnings the Scorecard repeats across branch campuses are counted once.
-				</li>
-				<li>
-					<strong>Observational comparisons.</strong> Differences between majors or price tiers reflect who enrolls
-					as well as what schools do; nothing here shows that changing majors or schools would change a given
-					person’s earnings.
-				</li>
-				<li>
-					<strong>Sticker prices.</strong> Tuition is published price, not net price, and is not adjusted for inflation;
-					earnings are in 2024 dollars.
-				</li>
-			</ul>
-
-			<h3>Methods</h3>
-			<div class="prose methods">
-				<p>
-					<strong>Sources.</strong> U.S. Department of Education, College Scorecard, release {data.meta.release}:
-					field-of-study files <code>{data.meta.source_files_in_zip.degree_counts}</code> (degree counts for 2020–21 and
-					2021–22) and <code>{data.meta.source_files_in_zip.earnings}</code> (1-year earnings for the same pooled
-					2020–21 and 2021–22 graduates), and institution files <code>MERGED2017_18</code>–<code>MERGED2021_22</code>
-					(published prices) and <code>MERGED2018_19</code>–<code>MERGED2022_23</code> (net price for the same
-					academic years). Cohort years were checked against the official data dictionary’s cohort map; the Scorecard
-					labels files by debt cohort, so the earnings for a graduating class sit in the <em>next</em> year’s file.
-				</p>
-				<p>
-					<strong>Scope.</strong> {data.meta.scope.schools}. Programs are joined on UNITID and 4-digit CIP code,
-					bachelor’s level only. Earnings that the Scorecard repeats across branch campuses of one institution are
-					counted once. A school’s price is the mean of the years it reported (at least 3 of 5).
-				</p>
-				<p>
-					<strong>Summaries.</strong> Tuition summaries count each school once. Degree shares are weighted by degrees.
-					Earnings summaries are quantiles of program medians, with each program counted once.
-				</p>
-				<p>
-					<strong>Reproduce.</strong> <code>npm run data:download</code>, <code>npm run data:build</code>, then
-					<code>npm run data:verify</code>. Full documentation: <code>docs/data-pipeline.md</code>.
-				</p>
-			</div>
-			<details class="counts ui">
-				<summary>Pipeline record counts</summary>
-				<table>
-					<tbody>
-						{#each data.meta.counts as c (c.step)}
-							<tr>
-								<th scope="row">{c.step}</th>
-								<td>
-									{Object.entries(c)
-										.filter(([k]) => k !== 'step')
-										.map(([k, v]) => `${k.replace(/_/g, ' ')}: ${typeof v === 'number' ? fmtInt(v) : v}`)
-										.join(' · ')}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</details>
-			<details class="counts ui">
-				<summary>Source files and retrieval dates</summary>
-				<ul>
-					{#each data.meta.sources as s (s.file)}
-						<li><a href={s.url}>{s.file}</a>, retrieved {s.retrieved_utc.slice(0, 10)} (last modified {s.last_modified})</li>
-					{/each}
-				</ul>
-			</details>
+			<div class="placeholder ui">Placeholder: content coming soon.</div>
 		</section>
 	{/if}
 </main>
@@ -708,7 +580,8 @@
 		background: var(--surface);
 	}
 
-	section {
+	/* section.wrap (not section) so .wrap's `padding: 0 24px` doesn't cancel the top spacing */
+	section.wrap {
 		padding-top: 72px;
 	}
 	.step {
@@ -1040,55 +913,6 @@
 		margin-bottom: 8px;
 	}
 
-	.drafts {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 24px;
-		margin-top: 24px;
-	}
-	.draft {
-		padding: 16px;
-		background: var(--draft-wash);
-		border: 1.5px dashed var(--draft);
-		border-radius: 12px;
-		min-width: 0;
-	}
-	.draft h3 {
-		font-size: 19px;
-		margin: 4px 0 12px;
-	}
-	.draft img {
-		display: block;
-		width: 100%;
-		height: auto;
-		border-radius: 6px;
-		border: 1px solid var(--border);
-	}
-	.badge {
-		margin: 0;
-		font-size: 12px;
-		font-weight: 700;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--draft);
-	}
-	.draft dl {
-		font-size: 13.5px;
-		line-height: 1.5;
-		margin: 12px 0 0;
-	}
-	.draft dt {
-		font-weight: 700;
-		margin-top: 8px;
-	}
-	.draft dd {
-		margin: 2px 0 0;
-		color: var(--ink-2);
-	}
-
-	.methods p {
-		font-size: 16px;
-	}
 	code {
 		font-size: 0.85em;
 		background: var(--wash);
@@ -1096,34 +920,15 @@
 		border-radius: 4px;
 		overflow-wrap: anywhere;
 	}
-	.counts {
+	.placeholder {
+		min-height: 160px;
+		display: grid;
+		place-items: center;
 		margin-top: 16px;
-		font-size: 13px;
-		max-width: 860px;
-	}
-	.counts summary {
-		cursor: pointer;
-		font-weight: 600;
-		padding: 6px 0;
-	}
-	.counts table {
-		border-collapse: collapse;
-		width: 100%;
-	}
-	.counts th,
-	.counts td {
-		text-align: left;
-		vertical-align: top;
-		padding: 4px 8px 4px 0;
-		border-bottom: 1px solid var(--grid);
-		font-weight: 400;
-	}
-	.counts td {
-		color: var(--ink-2);
-		font-variant-numeric: tabular-nums;
-	}
-	.counts li {
-		overflow-wrap: anywhere;
+		border: 1.5px dashed var(--axis);
+		border-radius: 12px;
+		color: var(--muted);
+		font-size: 14px;
 	}
 	footer {
 		padding: 64px 24px 48px;
