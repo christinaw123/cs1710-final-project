@@ -16,8 +16,9 @@ Higher tuition and a major's popularity do not necessarily indicate higher earni
 | D3 chart 2: earnings by major (dot + interval) | **Done** | `src/lib/components/EarningsByMajor.svelte` |
 | Linked detail: programs in one major (tuition × earnings scatter) | **Done** (extra) | `src/lib/components/MajorScatter.svelte` |
 | Narrative numbers computed from cleaned data | **Done** | `static/data/findings.json` → section 3 of the page |
-| Dollar bill, brain, flow diagram | **Design drafts only** (static SVG from real data) | `docs/designs/`, "Explore further" section |
-| Automated checks (data, browser) | **Done** | `scripts/verify_summaries.mjs`, `scripts/screenshots.mjs` |
+| Scrollama scrollytelling for the tuition and earnings sections | **Done** | `src/lib/components/Scrolly.svelte`, `src/routes/+page.svelte` (see §3b) |
+| Dollar bill, brain, flow diagram | **Design drafts only** (static SVG from real data, in `docs/designs/`) | Parts 4 and 5 of the page are currently empty placeholders |
+| Automated checks (data, browser) | **Done** | `scripts/verify_summaries.mjs`, `scripts/screenshots.mjs`, `scripts/check_scrollytelling.mjs` |
 | Deployment | Not done (static build works; nothing deployed) | |
 
 Not implemented yet: the interactive dollar bill, brain and flow; earnings beyond one year; the family-
@@ -94,13 +95,95 @@ The two charts share one state (`range`, `residency`, `selectedSchool`, `selecte
 above chart 2 always says what is being compared, e.g. "all 1,876 schools vs. 440 schools charging
 $20,000–$34,900", and an empty range shows an explicit message.
 
+## 3b. Scrollytelling (Scrollama)
+
+Both chart sections now use a sticky graphic with a column of short story steps. Scrolling changes only
+what is **emphasized**. It never filters data, changes axes, or touches the reader's own selections.
+
+### Steps as implemented
+
+Every number in a step is computed in the browser from the cleaned data (all 1,876 schools, in-state
+prices). The values that also appear in `findings.json` match it: the medians by type, Business's share,
+median and rank, Nursing's and English's medians and gap, and the within-major spread. The tuition range,
+the 5th/95th percentiles, and the shares under $15,000 or at least $20,000 are new and computed only on the page.
+
+| Section | Step | Visual change | Text (numbers shown) |
+|---|---|---|---|
+| Tuition | 1 | Full distribution, all groups in color | Prices ran from $480 to $60,725; the middle 90% between $6,234 and $52,698 |
+| Tuition | 2 | Public bars stay blue; other groups turn gray | 96% of 546 public colleges under $15,000 in-state; median $8,804 |
+| Tuition | 3 | Private nonprofit bars stay orange; others gray | Median $30,531; 71% of 1,181 charge ≥ $20,000; range $3,008–$60,725 |
+| Tuition | 4 | All groups restored | Invitation to search a college, switch residency, or brush a range |
+| Earnings | 1 | All majors at full strength | How to read the dot (median program) and bar (middle 50% of programs) |
+| Earnings | 2 | Business row emphasized and labeled; other rows dimmed | 7.7% of degrees; median program $51,317 ranks 8th of the 20 most common majors |
+| Earnings | 3 | Nursing and English emphasized and labeled | $80,271 vs. $37,131, a $43,140 gap; typical within-major middle-half spread $8,554 |
+| Earnings | 4 | All majors restored | Invitation to click a major or compare a tuition range |
+
+The section headline was changed from "Published tuition varies tenfold" to "Published tuition ranges widely".
+The middle 90% of prices span about 8.5×, and the full range far more, so "tenfold" was not accurate.
+
+### "Dimmed for emphasis" vs. "filtered out"
+
+- **Dimmed for emphasis (story):** histogram bars switch to a flat gray at full height, and earnings rows
+  drop to 20% opacity. Nothing is removed, counts and axes are unchanged, and dimmed rows still show
+  tooltips. A note in the chart says so ("Gray bars are dimmed for emphasis; every school is still counted"
+  / "Other majors are dimmed for emphasis, not removed"), and so does the step text.
+- **Filtered out (reader's tuition brush):** bars outside the selected range fade to 22% opacity in their
+  own color, with the note "Faded bars fall outside your selected tuition range". The earnings chart keeps
+  the all-schools comparison and overlays the selected range in black.
+
+### State model
+
+- `tuitionStep` and `earningsStep` in `+page.svelte` are the single source of truth for each section. Only
+  the Scrollama callbacks in `Scrolly.svelte` write them (`onStepEnter` sets the index; leaving the first
+  step upward sets `null`).
+- Emphasis is *derived* from the step (`tuitionEmphasis`, `earningsEmphasis`) and passed to the charts as
+  a separate `emphasis` prop. The charts apply it by toggling CSS classes on existing marks in their own
+  effect, so a step change never redraws a chart or moves the brush.
+- User state (`range`, `residency`, `selectedSchool`, `selectedMajor`, sort, top N) is separate and never
+  written by scroll code. Because emphasis is a pure function of the current step, scrolling up restores
+  the previous step's view exactly.
+
+### Layout
+
+- **Wide screens (≥ 900 px):** steps column on the left (240–300 px), sticky graphic on the right,
+  vertically centered. The tuition graphic includes the residency toggle and college search. The earnings
+  rows shrink (28–38 px) to fit the viewport height; if the window is still too short, the sticky panel
+  scrolls internally.
+- **Narrow screens:** the graphic sticks to the top of the screen with an opaque background, and the steps
+  scroll up into the space below it, sliding underneath instead of overlapping. The histogram is 240 px
+  tall. The earnings chart switches to compact one-line rows inside a panel capped at 62% of the screen.
+  When a step emphasizes rows, that panel (not the page) scrolls them into view.
+- Story controls stay usable throughout. The full selection readout, range inputs, captions, summary table,
+  major controls and the "inside one major" scatter follow each story block.
+
+### Motion, robustness and cleanup
+
+- Transitions are 250 ms on fill/opacity only, wrapped in `prefers-reduced-motion: no-preference`. The
+  page is never scrolled programmatically.
+- Scrollama is imported dynamically inside `onMount`, so it only runs in the browser. Window resizes
+  call `scroller.resize()`, and crossing the 900 px breakpoint switches the trigger line (0.5 → 0.8 of the
+  viewport). Observers and listeners are removed when the component is destroyed.
+- If Scrollama fails to load, the step state stays `null`: all step text is shown at full strength and the
+  charts are fully colored and interactive. (Tested by blocking the module.)
+
+### Verification (`node scripts/check_scrollytelling.mjs http://localhost:5173`, 64/64 passed)
+
+- Each step on desktop (1280×900) and mobile (390×844) shows the expected emphasis, scrolling down and back up.
+- A range, college, and major chosen before scrolling are unchanged after scrolling through every step and back.
+- Brushing and Reset work on the sticky histogram mid-story; earnings tooltips still appear.
+- On mobile, every active step's text sits fully below the sticky graphic, there is no horizontal scroll,
+  and emphasized rows are visible inside the earnings panel.
+- Reduced motion turns chart transitions off; a blocked Scrollama falls back to readable text.
+- No console or page errors on desktop or mobile.
+
 ## 4. Narrative sequence
 
 1. **Hook:** "Does a more expensive college mean a bigger paycheck?" The intro states the data years and
    shows that published price ≠ net price, using real medians.
-2. **Rising insight 1 (cost):** published tuition varies tenfold, and type explains much of it. Readers find
-   their school and brush a range.
-3. **Rising insight 2 (earnings):** early earnings vary far more between majors than within them. The brushed range
+2. **Rising insight 1 (cost):** published tuition ranges widely, and type explains much of it. Story steps
+   highlight public, then private nonprofit colleges; then readers find their school and brush a range.
+3. **Rising insight 2 (earnings):** early earnings vary far more between majors than within them. Story steps
+   explain the encoding, highlight Business (popular, mid-paying), then Nursing vs. English. The brushed range
    shows how pricier or cheaper schools compare in each major.
 4. **Main message (checked against the data, section "What does this mean?"):**
    - Popularity ≠ pay: Business has 7.7% of degrees but its median program ranks 8th of the top 20. Across 127
@@ -160,8 +243,22 @@ Next steps
 | `15-error-state.png` | Missing-data error state |
 | `dollar-bill-draft.png`, `brain-draft.png`, `flow-draft.png` | Updated design drafts |
 
-To capture by hand: `npm run dev`, open the page, drag across the histogram, and use the browser's
-"Capture node screenshot" on a section.
+Screenshots `01`–`15` show the page **before scrollytelling**. With the story layout, whole-section
+captures become very tall, so use the step captures below for the current design.
+
+### Scrollytelling screenshots (`docs/screenshots/scrolly/`)
+
+`node scripts/check_scrollytelling.mjs http://localhost:5173` (with `npm run dev` running) regenerates these
+and runs 64 checks.
+
+| File | Use in the process book |
+|---|---|
+| `desktop-cost-step1.png` … `step4.png` | Tuition story: full distribution → public → nonprofit → all restored |
+| `desktop-earnings-step1.png` … `step4.png` | Earnings story: encoding → Business → Nursing vs. English → all restored |
+| `desktop-brush-mid-story.png` | Brushing the sticky histogram during the story (selections are independent of scrolling) |
+| `mobile-cost-step1.png` … `step4.png`, `mobile-earnings-step1.png` … `step4.png` | Narrow layout: graphic on top, text below, no overlap |
+
+To capture by hand: `npm run dev`, open the page, scroll to a step, and take a window screenshot.
 
 ## 7. Team contributions
 

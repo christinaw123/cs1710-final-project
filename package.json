@@ -11,6 +11,7 @@
     "data:download": "bash scripts/download_data.sh",
     "data:build": "python3 scripts/build_data.py",
     "data:verify": "node scripts/verify_summaries.mjs",
+    "test:scrolly": "node scripts/check_scrollytelling.mjs",
     "designs": "node scripts/make_design_drafts.mjs"
   },
   "devDependencies": {
@@ -27,6 +28,7 @@
     "vite": "7.3.7"
   },
   "dependencies": {
-    "d3": "7.9.0"
+    "d3": "7.9.0",
+    "scrollama": "3.2.0"
   }
 }

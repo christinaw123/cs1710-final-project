@@ -19,6 +19,7 @@
 	import EarningsByMajor from '$lib/components/EarningsByMajor.svelte';
 	import MajorScatter from '$lib/components/MajorScatter.svelte';
 	import SchoolSearch from '$lib/components/SchoolSearch.svelte';
+	import Scrolly from '$lib/components/Scrolly.svelte';
 
 	let data = $state(null);
 	let loadError = $state(null);
@@ -30,6 +31,16 @@
 	let selectedMajor = $state(null);
 	let sortBy = $state('deg');
 	let topN = $state(20);
+
+	// Scroll-story state: one authoritative step index per section, written only by Scrollama.
+	// It drives *emphasis* (what is dimmed for narration) and never touches the user selections above.
+	let tuitionStep = $state(null);
+	let earningsStep = $state(null);
+	let vw = $state(1200);
+	let vh = $state(900);
+	let tuitionStickyH = $state(0);
+	let earningsStickyH = $state(0);
+	let earningsPanel = $state(null);
 
 	onMount(async () => {
 		try {
@@ -142,12 +153,83 @@
 		range = [Math.max(0, a), Math.min(xMaxTuition, b)];
 	}
 
+	// Story emphasis derived from the step index (null = no emphasis, all groups at full strength).
+	const STORY_CIP = { business: '5202', nursing: '5138', english: '2301' };
+	const tuitionEmphasis = $derived(tuitionStep === 1 ? [1] : tuitionStep === 2 ? [2] : null);
+	const earningsEmphasis = $derived(
+		earningsStep === 1 ? [STORY_CIP.business] : earningsStep === 2 ? [STORY_CIP.nursing, STORY_CIP.english] : null
+	);
+	const emphasisLabel = $derived(
+		earningsStep === 1 ? 'Business' : earningsStep === 2 ? 'Nursing and English' : null
+	);
+
+	// Numbers quoted in the story steps, computed from the cleaned data (all schools, in-state prices).
+	const story = $derived.by(() => {
+		if (!data || !national) return null;
+		const sorted = (rows) => rows.map((s) => s.tuition_in).filter((v) => v != null).sort(d3.ascending);
+		const all = sorted(data.schools);
+		const pub = sorted(data.schools.filter((s) => s.control === 1));
+		const np = sorted(data.schools.filter((s) => s.control === 2));
+		const top20 = ranked.slice(0, 20);
+		const byEarnings = [...top20].sort((a, b) => b.p50 - a.p50);
+		const m = (cip) => national.byCip.get(cip);
+		const nur = m(STORY_CIP.nursing);
+		const eng = m(STORY_CIP.english);
+		return {
+			tMin: all[0],
+			tMax: all.at(-1),
+			t05: d3.quantileSorted(all, 0.05),
+			t95: d3.quantileSorted(all, 0.95),
+			pubN: pub.length,
+			pubMed: d3.quantileSorted(pub, 0.5),
+			pubUnder15: pub.filter((v) => v < 15000).length / pub.length,
+			npN: np.length,
+			npMed: d3.quantileSorted(np, 0.5),
+			npMin: np[0],
+			npMax: np.at(-1),
+			npOver20: np.filter((v) => v >= 20000).length / np.length,
+			bus: m(STORY_CIP.business),
+			busRank: byEarnings.findIndex((d) => d.cip === STORY_CIP.business) + 1,
+			nur,
+			eng,
+			gap: nur.p50 - eng.p50,
+			withinIqr: d3.median(top20, (d) => d.p75 - d.p25)
+		};
+	});
+	const ordinal = (n) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
+	const stepState = (step, i) => (step === null ? '' : step === i ? 'active' : 'inactive');
+
+	// Earnings rows shrink (within limits) so the chart fits its sticky slot on wide screens.
+	const earningsRowHeight = $derived(Math.floor((vh - 250) / Math.max(rows.length, 1)));
+
+	// When the sticky earnings panel is shorter than the chart (small screens), bring the emphasized
+	// rows into view inside the panel. This scrolls the panel only, never the page.
+	$effect(() => {
+		const cips = earningsEmphasis;
+		const step = earningsStep;
+		const panel = earningsPanel;
+		if (!panel || panel.scrollHeight <= panel.clientHeight + 1) return;
+		const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+		if (!cips) {
+			if (step === 0) panel.scrollTo({ top: 0, behavior });
+			return;
+		}
+		const els = cips.map((c) => panel.querySelector(`g.row[data-cip="${c}"]`)).filter(Boolean);
+		if (!els.length) return;
+		const top = panel.getBoundingClientRect().top - panel.scrollTop;
+		const lo = Math.min(...els.map((e) => e.getBoundingClientRect().top - top));
+		const hi = Math.max(...els.map((e) => e.getBoundingClientRect().bottom - top));
+		panel.scrollTo({ top: Math.max(0, (lo + hi) / 2 - panel.clientHeight / 2), behavior });
+	});
+
 	// Narrative helpers (every number comes from findings.json)
 	const topMajors = $derived(f ? f.top20_majors.values : []);
 	const gapRows = $derived(f ? [...f.tuition_quartile_gap_within_major.values].sort((a, b) => a.gap - b.gap) : []);
 	const tuitionMed = (label) => f.tuition_by_control.values[label];
 	const short = (t) => t.split(',')[0];
 </script>
+
+<svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
 
 <svelte:head>
 	<title>Does a more expensive college mean a bigger paycheck?</title>
@@ -217,63 +299,102 @@
 		<!-- 2. COST -->
 		<section class="wrap" id="cost" data-xmax={xMaxTuition}>
 			<p class="step ui">1 · What does college cost?</p>
-			<h2>Published tuition varies tenfold, and the type of school explains much of it</h2>
+			<h2>Published tuition ranges widely, and the type of school explains much of it</h2>
 			<p class="prose">
-				The median public school in our data published {fmtUSD(tuitionMed('Public').tuition_in_median)} a year in in-state
-				tuition and fees ({fmtUSD(tuitionMed('Public').tuition_out_median)} out of state). The median private nonprofit
-				published {fmtUSD(tuitionMed('Private nonprofit').tuition_in_median)}, and the median private for-profit
-				{fmtUSD(tuitionMed('Private for-profit').tuition_in_median)}. Find a college, or drag across the chart to choose a
-				tuition range. The range carries into the earnings comparison below.
+				Scroll to step through the chart. Every control works at any point, and the full readout, source notes and
+				summary table follow the story.
 			</p>
 
-			<div class="controls ui">
-				<div class="control">
-					<span class="label" id="res-label">Public schools’ price</span>
-					<div class="segmented" role="group" aria-labelledby="res-label">
-						<button aria-pressed={residency === 'in'} onclick={() => (residency = 'in')}>In-state</button>
-						<button aria-pressed={residency === 'out'} onclick={() => (residency = 'out')}>Out-of-state</button>
+			<Scrolly bind:step={tuitionStep} class="scrolly" style="--sticky-h: {tuitionStickyH}px">
+				<div class="graphic">
+					<div class="sticky" bind:clientHeight={tuitionStickyH}>
+						<div class="controls compact ui">
+							<div class="control">
+								<span class="label" id="res-label">Public schools’ price</span>
+								<div class="segmented" role="group" aria-labelledby="res-label">
+									<button aria-pressed={residency === 'in'} onclick={() => (residency = 'in')}>In-state</button>
+									<button aria-pressed={residency === 'out'} onclick={() => (residency = 'out')}>Out-of-state</button>
+								</div>
+							</div>
+							<div class="control grow">
+								<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={(s) => (selectedSchool = s)} />
+							</div>
+						</div>
+						<figure class="figure">
+							<TuitionHistogram
+								schools={data.schools}
+								xMax={xMaxTuition}
+								height={vw < 600 ? 240 : 300}
+								{residency}
+								{range}
+								{selectedSchool}
+								emphasis={tuitionEmphasis}
+								onrange={(r) => (range = r)}
+							/>
+							<p class="sel-line ui">
+								{#if range}
+									<strong>Selected {fmtUSD(range[0])}–{fmtUSD(range[1])}</strong> · {fmtInt(selIds.size)}
+									{selIds.size === 1 ? 'school' : 'schools'}
+									<button class="link" onclick={() => (range = null)}>Reset</button>
+								{:else}
+									Drag across the chart to select a tuition range.
+								{/if}
+							</p>
+						</figure>
 					</div>
 				</div>
-				<div class="control grow">
-					<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={(s) => (selectedSchool = s)} />
+				<ol class="steps" aria-label="Tuition story">
+					<li class="story-step {stepState(tuitionStep, 0)}" data-step="0">
+						<strong>Prices vary widely.</strong> Across these {fmtInt(data.schools.length)} colleges, average published
+						in-state tuition and fees ran from {fmtUSD(story.tMin)} to {fmtUSD(story.tMax)} a year. The middle 90% of
+						schools charged between {fmtUSD(story.t05)} and {fmtUSD(story.t95)}. Each bar counts schools in a $2,500
+						band.
+					</li>
+					<li class="story-step {stepState(tuitionStep, 1)}" data-step="1">
+						<strong><span class="swatch" style:background="var(--c-public)"></span>Public colleges cluster at the low
+							end.</strong>
+						{fmtPct(story.pubUnder15, 0)} of the {fmtInt(story.pubN)} public colleges published in-state tuition under
+						$15,000; the median was {fmtUSD(story.pubMed)}. Other schools are grayed for emphasis, not removed.
+					</li>
+					<li class="story-step {stepState(tuitionStep, 2)}" data-step="2">
+						<strong><span class="swatch" style:background="var(--c-nonprofit)"></span>Private nonprofits spread across
+							the whole range.</strong>
+						Their median was {fmtUSD(story.npMed)}, and {fmtPct(story.npOver20, 0)} of the {fmtInt(story.npN)} charged
+						$20,000 or more, but their prices ran from {fmtUSD(story.npMin)} to {fmtUSD(story.npMax)}.
+					</li>
+					<li class="story-step {stepState(tuitionStep, 3)}" data-step="3">
+						<strong>Now find your place.</strong> All three groups are back. Search for a college, switch public schools
+						to out-of-state prices, or drag across the chart to choose a tuition range. Your range carries into the
+						earnings comparison below.
+					</li>
+				</ol>
+			</Scrolly>
+
+			<div class="readout ui">
+				<p data-testid="range-readout" aria-live="polite">
+					{#if range}
+						<strong>Selected: {fmtUSD(range[0])} – {fmtUSD(range[1])}</strong> ·
+						{fmtInt(selIds.size)} {selIds.size === 1 ? 'school' : 'schools'}
+						({byControl.map((c) => `${fmtInt(c.n)} ${c.label.toLowerCase()}`).join(', ')})
+					{:else}
+						<strong>No range selected:</strong> showing all {fmtInt(data.schools.length)} schools. Drag across the
+						chart, or type a range.
+					{/if}
+				</p>
+				<div class="range-inputs">
+					<label>From $<input id="range-lo" type="number" min="0" step="500" value={range ? range[0] : ''}
+							onchange={(e) => setRangeFromInputs(e.currentTarget.value, range ? range[1] : xMaxTuition)} /></label>
+					<label>to $<input id="range-hi" type="number" min="0" step="500" value={range ? range[1] : ''}
+							onchange={(e) => setRangeFromInputs(range ? range[0] : 0, e.currentTarget.value)} /></label>
+					<button class="btn" data-testid="reset" onclick={() => (range = null)} disabled={!range}>Reset to all schools</button>
 				</div>
 			</div>
-
-			<figure class="figure">
-				<TuitionHistogram
-					schools={data.schools}
-					xMax={xMaxTuition}
-					{residency}
-					{range}
-					{selectedSchool}
-					onrange={(r) => (range = r)}
-				/>
-				<div class="readout ui">
-					<p data-testid="range-readout" aria-live="polite">
-						{#if range}
-							<strong>Selected: {fmtUSD(range[0])} – {fmtUSD(range[1])}</strong> ·
-							{fmtInt(selIds.size)} {selIds.size === 1 ? 'school' : 'schools'}
-							({byControl.map((c) => `${fmtInt(c.n)} ${c.label.toLowerCase()}`).join(', ')})
-						{:else}
-							<strong>No range selected:</strong> showing all {fmtInt(data.schools.length)} schools. Drag across the
-							chart, or type a range.
-						{/if}
-					</p>
-					<div class="range-inputs">
-						<label>From $<input id="range-lo" type="number" min="0" step="500" value={range ? range[0] : ''}
-								onchange={(e) => setRangeFromInputs(e.currentTarget.value, range ? range[1] : xMaxTuition)} /></label>
-						<label>to $<input id="range-hi" type="number" min="0" step="500" value={range ? range[1] : ''}
-								onchange={(e) => setRangeFromInputs(range ? range[0] : 0, e.currentTarget.value)} /></label>
-						<button class="btn" data-testid="reset" onclick={() => (range = null)} disabled={!range}>Reset to all schools</button>
-					</div>
-				</div>
-				<figcaption>
-					Each bar counts <strong>schools</strong> (each school counts once, regardless of size) whose average published
-					{residency === 'out' ? 'out-of-state' : 'in-state'} tuition and fees from 2017–18 to 2021–22 fall in a $2,500 band.
-					The in-state/out-of-state switch mostly changes public schools; nearly all private schools publish one price.
-					Nominal dollars. Source: College Scorecard.
-				</figcaption>
-			</figure>
+			<p class="source ui">
+				Each bar counts <strong>schools</strong> (each school counts once, regardless of size) whose average published
+				{residency === 'out' ? 'out-of-state' : 'in-state'} tuition and fees from 2017–18 to 2021–22 fall in a $2,500 band.
+				The in-state/out-of-state switch mostly changes public schools; nearly all private schools publish one price.
+				Nominal dollars. Source: College Scorecard.
+			</p>
 
 			{#if selectedSchool}
 				<div class="school-card ui">
@@ -323,26 +444,83 @@
 			<p class="prose">
 				A <em>program</em> is one major at one college. For each program, the Scorecard reports the median earnings, one
 				year after graduation, of graduates who received federal financial aid, worked that year, and were not enrolled
-				in school. Each row below shows how that program-level median varies across colleges offering the major. Small
-				programs are suppressed for privacy, so the reported programs cover
+				in school. Small programs are suppressed for privacy, so the reported programs cover
 				{fmtPct(f.scope.degree_share_in_programs_with_earnings, 0)} of the degrees in our data.
 			</p>
 
-			<div class="compare-bar ui" class:active={range}>
-				{#if range}
-					Comparing <span class="key-band"></span> <strong>all {fmtInt(data.schools.length)} schools</strong> with
-					<span class="key-sel"></span> <strong>{fmtInt(selIds.size)} schools charging {fmtUSD(range[0])}–{fmtUSD(range[1])}</strong>
-					({residency === 'out' ? 'out-of-state' : 'in-state'} price).
-					<button class="link" onclick={() => (range = null)}>Reset</button>
-				{:else}
-					Showing <strong>all {fmtInt(data.schools.length)} schools</strong>. Select a tuition range above to compare.
-				{/if}
-			</div>
-			{#if range && selIds.size === 0}
-				<p class="state empty ui" role="status">
-					No schools fall in the selected tuition range. Widen the range or reset to compare with all schools.
-				</p>
-			{/if}
+			<Scrolly bind:step={earningsStep} class="scrolly" style="--sticky-h: {earningsStickyH}px">
+				<div class="graphic">
+					<div class="sticky scrollable" bind:this={earningsPanel} bind:clientHeight={earningsStickyH}>
+						<div class="compare-bar ui" class:active={range}>
+							{#if range}
+								Comparing <span class="key-band"></span> <strong>all {fmtInt(data.schools.length)} schools</strong> with
+								<span class="key-sel"></span> <strong>{fmtInt(selIds.size)} schools charging {fmtUSD(range[0])}–{fmtUSD(range[1])}</strong>
+								({residency === 'out' ? 'out-of-state' : 'in-state'} price).
+								<button class="link" onclick={() => (range = null)}>Reset</button>
+							{:else}
+								Showing <strong>all {fmtInt(data.schools.length)} schools</strong>. Select a tuition range above to compare.
+							{/if}
+						</div>
+						{#if range && selIds.size === 0}
+							<p class="state empty ui" role="status">
+								No schools fall in the selected tuition range. Widen the range or reset to compare with all schools.
+							</p>
+						{/if}
+						<div class="legend ui" aria-hidden="true">
+							<span class="key"><span class="lg-band" class:faded={range}></span>All schools: middle 50% of programs</span>
+							<span class="key"><span class="lg-dot" class:faded={range}></span>All schools: median program</span>
+							{#if range}
+								<span class="key"><span class="lg-sel"></span>Selected tuition range: middle 50% and median</span>
+							{/if}
+							{#if selectedSchool}
+								<span class="key"><span class="lg-diamond"></span>{selectedSchool.name}</span>
+							{/if}
+						</div>
+						{#if emphasisLabel}
+							<p class="emphasis-note ui" aria-live="polite">
+								<span class="dim-row"></span>Highlighting {emphasisLabel}. Other majors are dimmed for emphasis, not removed.
+							</p>
+						{/if}
+						<figure class="figure">
+							<EarningsByMajor
+								{rows}
+								hasRange={!!range}
+								xDomain={earnDomain}
+								{shareMax}
+								rowHeight={earningsRowHeight}
+								emphasis={earningsEmphasis}
+								{selectedMajor}
+								{schoolEarn}
+								schoolName={selectedSchool?.name}
+								onselect={(cip) => (selectedMajor = cip)}
+							/>
+						</figure>
+					</div>
+				</div>
+				<ol class="steps" aria-label="Earnings story">
+					<li class="story-step {stepState(earningsStep, 0)}" data-step="0">
+						<strong>How to read this chart.</strong> Each row is a major, ordered by degrees awarded. The dot is the
+						<em>median program</em>: the middle of colleges’ reported medians one year after graduation. The bar spans
+						the middle 50% of programs, so a wide bar means earnings vary a lot by college.
+					</li>
+					<li class="story-step {stepState(earningsStep, 1)}" data-step="1">
+						<strong>The most popular major is not the best paid.</strong> Business administration accounts for
+						{fmtPct(story.bus.share)} of bachelor’s degrees, more than any other major. Its median program,
+						{fmtUSD(story.bus.p50)}, ranks {ordinal(story.busRank)} of the 20 most common majors. Other majors are dimmed
+						for emphasis, not removed.
+					</li>
+					<li class="story-step {stepState(earningsStep, 2)}" data-step="2">
+						<strong>Majors differ by tens of thousands.</strong> Nursing’s median program reported
+						{fmtUSD(story.nur.p50)}; English’s reported {fmtUSD(story.eng.p50)}, a gap of {fmtUSD(story.gap)}. Within one
+						of the 20 most common majors, the middle half of programs typically spans about {fmtUSD(story.withinIqr)}.
+					</li>
+					<li class="story-step {stepState(earningsStep, 3)}" data-step="3">
+						<strong>Now compare for yourself.</strong> All majors are back. Click a row, or use the major menu below the
+						chart, to see every college’s program. Select a tuition range above to compare those schools with all
+						schools.
+					</li>
+				</ol>
+			</Scrolly>
 
 			<div class="controls ui">
 				<div class="control">
@@ -369,38 +547,16 @@
 					</select>
 				</div>
 			</div>
-
-			<div class="legend ui" aria-hidden="true">
-				<span class="key"><span class="lg-band" class:faded={range}></span>All schools: middle 50% of programs</span>
-				<span class="key"><span class="lg-dot" class:faded={range}></span>All schools: median program</span>
-				{#if range}
-					<span class="key"><span class="lg-sel"></span>Selected tuition range: middle 50% and median</span>
-				{/if}
-				{#if selectedSchool}
-					<span class="key"><span class="lg-diamond"></span>{selectedSchool.name}</span>
-				{/if}
-			</div>
-			<figure class="figure">
-				<EarningsByMajor
-					{rows}
-					hasRange={!!range}
-					xDomain={earnDomain}
-					{shareMax}
-					{selectedMajor}
-					{schoolEarn}
-					schoolName={selectedSchool?.name}
-					onselect={(cip) => (selectedMajor = cip)}
-				/>
-				<figcaption>
-					Rows are majors (4-digit CIP codes), ranked by bachelor’s degrees awarded at all schools. Sorting always uses
-					the all-schools values, so rows do not jump when you filter, and the earnings axis is fixed at
-					{fmtUSDk(earnDomain[0])}–{fmtUSDk(earnDomain[1])} (values beyond it are drawn at the edge and marked ›). The
-					<strong>median program</strong> is the middle value of programs’ reported medians: each program counts once
-					regardless of size, so it is not the median graduate. The <strong>middle 50%</strong> runs from the 25th to the
-					75th percentile of programs. Majors with fewer than {MIN_PROGRAMS_FOR_INTERVAL} reporting programs show
-					individual programs as open circles. Share of degrees is weighted by degrees awarded in 2020–21 and 2021–22.
-				</figcaption>
-			</figure>
+			<p class="source ui">
+				Rows are majors (4-digit CIP codes), ranked by bachelor’s degrees awarded at all schools. Sorting always uses
+				the all-schools values, so rows do not jump when you filter, and the earnings axis is fixed at
+				{fmtUSDk(earnDomain[0])}–{fmtUSDk(earnDomain[1])} (values beyond it are drawn at the edge and marked ›). The
+				<strong>median program</strong> is the middle value of programs’ reported medians: each program counts once
+				regardless of size, so it is not the median graduate. The <strong>middle 50%</strong> runs from the 25th to the
+				75th percentile of programs. Majors with fewer than {MIN_PROGRAMS_FOR_INTERVAL} reporting programs show
+				individual programs as open circles. Share of degrees is weighted by degrees awarded in 2020–21 and 2021–22.
+				Dimmed rows during the story are de-emphasized, never filtered out. Source: College Scorecard.
+			</p>
 
 			{#if selectedMajor}
 				<div class="detail" id="major-detail">
@@ -646,8 +802,8 @@
 			padding: 12px;
 		}
 	}
-	figcaption {
-		margin-top: 12px;
+	.source {
+		margin: 12px 0 0;
 		font-size: 13px;
 		line-height: 1.5;
 		color: var(--ink-2);
@@ -747,19 +903,152 @@
 	}
 
 	.compare-bar {
-		position: sticky;
-		top: 0;
-		z-index: 10;
-		margin: 24px 0 0;
-		padding: 10px 14px;
-		font-size: 14px;
+		margin: 0 0 10px;
+		padding: 8px 12px;
+		font-size: 13.5px;
 		background: var(--page);
 		border: 1px solid var(--border);
 		border-radius: 8px;
 	}
 	.compare-bar.active {
 		background: var(--surface);
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+	}
+
+	/* ---- Scrollytelling: sticky graphic beside (wide) or above (narrow) the story steps ---- */
+	/* .scrolly is the Scrolly component's root element, so it needs :global */
+	.wrap :global(.scrolly) {
+		margin-top: 24px;
+	}
+	.steps {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.story-step {
+		position: relative;
+		padding: 16px 18px;
+		font-size: 17px;
+		line-height: 1.55;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
+	.story-step strong {
+		display: block;
+		margin-bottom: 4px;
+	}
+	.story-step.active {
+		border-color: var(--ink-2);
+	}
+	/* Inactive steps fade only once Scrollama is running (step state is never set otherwise). */
+	.story-step.inactive {
+		opacity: 0.45;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.story-step {
+			transition:
+				opacity 250ms ease,
+				border-color 250ms ease;
+		}
+	}
+	.story-step .swatch {
+		margin-right: 6px;
+	}
+	.sticky .controls.compact {
+		margin: 0 0 10px;
+		gap: 10px 16px;
+	}
+	.sticky .figure {
+		padding: 14px 16px;
+	}
+	.sel-line {
+		margin: 6px 0 0;
+		font-size: 13px;
+		color: var(--ink-2);
+	}
+	.emphasis-note {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 6px;
+		font-size: 12.5px;
+		color: var(--ink-2);
+	}
+	.dim-row {
+		width: 22px;
+		height: 8px;
+		border-radius: 3px;
+		background: var(--ink-2);
+		opacity: 0.2;
+	}
+
+	@media (min-width: 900px) {
+		.wrap :global(.scrolly) {
+			display: grid;
+			grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+			column-gap: 36px;
+		}
+		.steps {
+			grid-column: 1;
+			grid-row: 1;
+			padding: 25vh 0 30vh;
+		}
+		.story-step + .story-step {
+			margin-top: 70vh;
+		}
+		.graphic {
+			grid-column: 2;
+			grid-row: 1;
+			min-width: 0;
+		}
+		.sticky {
+			position: sticky;
+			top: max(16px, calc(50vh - var(--sticky-h, 0px) / 2));
+		}
+		.sticky.scrollable {
+			max-height: calc(100vh - 32px);
+			overflow-y: auto;
+		}
+	}
+
+	@media (max-width: 899px) {
+		/* Graphic and steps share one grid cell: the opaque sticky graphic stays on top and the
+		   steps scroll up into the space below it, sliding underneath instead of overlapping text. */
+		.wrap :global(.scrolly) {
+			display: grid;
+		}
+		.graphic,
+		.steps {
+			grid-area: 1 / 1;
+			min-width: 0;
+		}
+		.graphic {
+			z-index: 2;
+			pointer-events: none;
+		}
+		.sticky {
+			position: sticky;
+			top: 0;
+			pointer-events: auto;
+			background: var(--page);
+			padding: 8px 0;
+			border-bottom: 1px solid var(--border);
+		}
+		.sticky.scrollable {
+			max-height: 62svh;
+			overflow-y: auto;
+		}
+		.steps {
+			position: relative;
+			z-index: 1;
+			padding: calc(var(--sticky-h, 0px) + 24px) 0 25svh;
+		}
+		.story-step {
+			font-size: 16px;
+		}
+		.story-step + .story-step {
+			margin-top: 45svh;
+		}
 	}
 	.link {
 		border: 0;

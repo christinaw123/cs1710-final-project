@@ -3,7 +3,7 @@
 	// across colleges (middle 50% interval + median program), all schools vs. the selected
 	// tuition range, with the share of bachelor's degrees alongside.
 	import * as d3 from 'd3';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { MIN_PROGRAMS_FOR_INTERVAL, fmtInt, fmtPct, fmtUSD, fmtUSDk } from '$lib/data/summarize.js';
 	import { createTooltip } from './tooltip.js';
 
@@ -12,6 +12,8 @@
 		hasRange,
 		xDomain,
 		shareMax,
+		rowHeight = 38, // wide layout row height; the page shrinks it so the chart fits a sticky slot
+		emphasis = null, // scroll-story highlight: CIPs kept at full strength; other rows dimmed, not removed
 		selectedMajor = null,
 		schoolEarn = null, // Map cip -> { earn, note } for the searched school
 		schoolName = null,
@@ -22,8 +24,9 @@
 	let svgEl;
 	let tooltip;
 
-	const stacked = $derived(width < 640);
-	const rowH = $derived(stacked ? 62 : 38);
+	// Narrow screens use compact one-line rows so the whole chart fits beside the story text.
+	const compact = $derived(width < 640);
+	const rowH = $derived(compact ? 24 : Math.max(28, Math.min(38, rowHeight)));
 	const axisTop = 30;
 	const axisBottom = 40;
 	const height = $derived(axisTop + rows.length * rowH + axisBottom);
@@ -35,21 +38,33 @@
 
 	$effect(() => {
 		if (!width || !svgEl) return;
-		draw(rows, hasRange, selectedMajor, schoolEarn, width, height, stacked, rowH);
+		draw(rows, hasRange, selectedMajor, schoolEarn, width, height, compact, rowH);
 	});
+
+	// Emphasis only toggles classes on existing rows, so story steps never redraw the chart.
+	$effect(() => applyEmphasis(emphasis));
+
+	function applyEmphasis(cips) {
+		if (!svgEl) return;
+		d3.select(svgEl)
+			.selectAll('g.row')
+			.classed('dimmed', (d) => !!cips && !cips.includes(d.cip))
+			.classed('emph', (d) => !!cips && cips.includes(d.cip));
+	}
 
 	function truncate(s, n) {
 		return s.length > n ? s.slice(0, n - 1) + '…' : s;
 	}
 
-	function draw(rows, hasRange, selectedMajor, schoolEarn, width, height, stacked, rowH) {
-		const labelW = stacked ? 0 : Math.min(250, Math.max(170, width * 0.27));
-		const shareW = stacked ? 0 : 104;
-		const plotX0 = stacked ? 8 : labelW + shareW + 24;
+	function draw(rows, hasRange, selectedMajor, schoolEarn, width, height, compact, rowH) {
+		const labelW = compact ? Math.max(110, Math.min(170, width * 0.36)) : Math.min(250, Math.max(170, width * 0.27));
+		const shareW = compact ? 0 : 104;
+		const plotX0 = compact ? labelW + 12 : labelW + shareW + 24;
 		const plotX1 = width - 14;
 		const x = d3.scaleLinear().domain(xDomain).range([plotX0, plotX1]).clamp(true);
 		const share = d3.scaleLinear().domain([0, shareMax]).range([0, shareW - 44]).clamp(true);
-		const trackY = stacked ? 47 : rowH / 2; // vertical center of the earnings marks within a row
+		const trackY = rowH / 2; // vertical center of the earnings marks within a row
+		const twoLineLabels = !compact && rowH >= 32;
 		const svg = d3.select(svgEl).attr('width', width).attr('height', height);
 		svg.selectAll('*').remove();
 
@@ -83,7 +98,7 @@
 			.attr('font-size', 12)
 			.attr('fill', 'var(--ink-2)')
 			.text(width < 480 ? 'Program median earnings, 1 yr (2024 $)' : "Programs' median earnings 1 year after graduating (2024 $)");
-		if (!stacked) {
+		if (!compact) {
 			svg
 				.append('text')
 				.attr('x', labelW + 8)
@@ -99,6 +114,7 @@
 			.data(rows, (d) => d.cip)
 			.join('g')
 			.attr('class', 'row')
+			.attr('data-cip', (d) => d.cip)
 			.attr('transform', (_, i) => `translate(0,${axisTop + i * rowH})`);
 
 		// Hit target / selection highlight spans the full row
@@ -128,33 +144,30 @@
 			})
 			.on('blur', () => tooltip.hide());
 
-		const g = row.append('g').attr('pointer-events', 'none');
+		const g = row.append('g').attr('class', 'marks').attr('pointer-events', 'none');
 
 		// Labels
-		const maxChars = stacked ? Math.floor(width / 7.2) : Math.floor(labelW / 6.9);
-		g.append('text')
-			.attr('x', stacked ? 8 : 8)
-			.attr('y', stacked ? 16 : rowH / 2 - 3)
-			.attr('font-size', 13)
-			.attr('font-weight', (d) => (d.cip === selectedMajor ? 700 : 500))
-			.attr('fill', 'var(--ink)')
-			.text((d) => truncate(d.title, maxChars));
 		g.append('text')
 			.attr('x', 8)
-			.attr('y', stacked ? 29 : rowH / 2 + 11)
-			.attr('font-size', 11)
-			.attr('fill', 'var(--muted)')
-			.text((d) => {
-				const s = hasRange ? d.sel : d.nat;
-				const n = s ? s.n : 0;
-				const base = `${fmtInt(n)} program${n === 1 ? '' : 's'} report earnings`;
-				if (!stacked) return base;
-				const sh = hasRange ? `${fmtPct(d.sel?.share)} of degrees in range (all: ${fmtPct(d.nat.share)})` : `${fmtPct(d.nat.share)} of degrees`;
-				return `${sh} · ${base}`;
-			});
+			.attr('y', twoLineLabels ? rowH / 2 - 3 : rowH / 2 + 4)
+			.attr('font-size', compact ? 11.5 : 13)
+			.attr('font-weight', (d) => (d.cip === selectedMajor ? 700 : 500))
+			.attr('fill', 'var(--ink)')
+			.text((d) => truncate(d.title, Math.floor(labelW / (compact ? 6.3 : 6.9))));
+		if (twoLineLabels) {
+			g.append('text')
+				.attr('x', 8)
+				.attr('y', rowH / 2 + 11)
+				.attr('font-size', 11)
+				.attr('fill', 'var(--muted)')
+				.text((d) => {
+					const n = (hasRange ? d.sel : d.nat)?.n ?? 0;
+					return `${fmtInt(n)} program${n === 1 ? '' : 's'} report earnings`;
+				});
+		}
 
-		// Degree share bars (wide layout)
-		if (!stacked) {
+		// Degree share bars (wide layout; compact rows show share in the tooltip and story labels)
+		if (!compact) {
 			const sx = labelW + 8;
 			g.append('rect')
 				.attr('x', sx)
@@ -182,7 +195,7 @@
 		}
 
 		// Earnings: all schools
-		const natBandH = hasRange ? 12 : 10;
+		const natBandH = compact ? 8 : hasRange ? 12 : 10;
 		const nat = g.filter((d) => d.nat.n >= MIN_PROGRAMS_FOR_INTERVAL);
 		nat.append('rect')
 			.attr('x', (d) => x(d.nat.p25))
@@ -195,7 +208,7 @@
 		nat.append('circle')
 			.attr('cx', (d) => x(d.nat.p50))
 			.attr('cy', trackY)
-			.attr('r', 4.5)
+			.attr('r', compact ? 4 : 4.5)
 			.attr('fill', hasRange ? 'var(--surface)' : 'var(--ink)')
 			.attr('stroke', hasRange ? 'var(--band-national-ink)' : 'var(--surface)')
 			.attr('stroke-width', 2);
@@ -221,7 +234,7 @@
 			sel.append('circle')
 				.attr('cx', (d) => x(d.sel.p50))
 				.attr('cy', trackY)
-				.attr('r', 5)
+				.attr('r', compact ? 4.5 : 5)
 				.attr('fill', 'var(--select)')
 				.attr('stroke', 'var(--surface)')
 				.attr('stroke-width', 2);
@@ -264,6 +277,28 @@
 				.attr('stroke', 'var(--ink)')
 				.attr('stroke-width', 2);
 		}
+
+		// Direct labels for the median program (all schools), shown only on rows a story step emphasizes.
+		g.filter((d) => d.nat.n >= MIN_PROGRAMS_FOR_INTERVAL)
+			.append('text')
+			.attr('class', 'value-label')
+			.each(function (d) {
+				const text = compact ? fmtUSD(d.nat.p50) : `${fmtUSD(d.nat.p50)} median program`;
+				const fits = x(d.nat.p75) + 8 + text.length * 6.2 <= plotX1;
+				d3.select(this)
+					.attr('x', fits ? x(Math.min(d.nat.p75, xDomain[1])) + 8 : x(Math.max(d.nat.p25, xDomain[0])) - 8)
+					.attr('text-anchor', fits ? 'start' : 'end')
+					.text(text);
+			})
+			.attr('y', trackY + 4)
+			.attr('font-size', 11.5)
+			.attr('font-weight', 700)
+			.attr('fill', 'var(--ink)')
+			.attr('paint-order', 'stroke')
+			.attr('stroke', 'var(--surface)')
+			.attr('stroke-width', 4);
+
+		applyEmphasis(untrack(() => emphasis));
 
 		function smallSample(sel, get, color) {
 			sel.each(function (d) {
@@ -332,5 +367,21 @@
 		outline: none;
 		stroke: var(--accent);
 		stroke-width: 2;
+	}
+	/* Story emphasis: dimmed rows stay in place (and stay hoverable), they are not filtered out. */
+	.chart :global(g.row.dimmed > g.marks) {
+		opacity: 0.2;
+	}
+	.chart :global(g.row .value-label) {
+		opacity: 0;
+	}
+	.chart :global(g.row.emph .value-label) {
+		opacity: 1;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.chart :global(g.row > g.marks),
+		.chart :global(g.row .value-label) {
+			transition: opacity 250ms ease;
+		}
 	}
 </style>

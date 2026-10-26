@@ -41,6 +41,7 @@ npm run designs            # regenerates docs/designs/*.svg from the cleaned dat
 ```bash
 npm run check                                     # svelte-check
 node scripts/screenshots.mjs http://localhost:4173  # 13 browser checks + process-book screenshots
+npm run test:scrolly -- http://localhost:5173        # 64 scrollytelling checks (needs `npm run dev`)
 ```
 
 ### Layout

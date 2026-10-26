@@ -12,6 +12,7 @@
 	--border: rgba(11, 11, 11, 0.1);
 	--wash: rgba(11, 11, 11, 0.045);
 	--band-national: #d6d5ce;
+	--dim: #d9d8d2; /* scroll-story emphasis: grayed, still counted */
 	--band-national-ink: #8f8d86;
 	--select: #0b0b0b;
 	--select-wash: rgba(11, 11, 11, 0.07);
@@ -42,6 +43,7 @@
 		--border: rgba(255, 255, 255, 0.1);
 		--wash: rgba(255, 255, 255, 0.06);
 		--band-national: #3a3a37;
+		--dim: #3d3d3a;
 		--band-national-ink: #8f8d86;
 		--select: #f0efec;
 		--select-wash: rgba(255, 255, 255, 0.08);
@@ -66,6 +68,7 @@
 	--border: rgba(255, 255, 255, 0.1);
 	--wash: rgba(255, 255, 255, 0.06);
 	--band-national: #3a3a37;
+	--dim: #3d3d3a;
 	--band-national-ink: #8f8d86;
 	--select: #f0efec;
 	--select-wash: rgba(255, 255, 255, 0.08);

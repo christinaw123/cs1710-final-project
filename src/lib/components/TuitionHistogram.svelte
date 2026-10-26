@@ -2,22 +2,30 @@
 	// D3 visualization 1: stacked histogram of schools by average published tuition & fees,
 	// with a brush that selects a tuition range shared with the earnings chart.
 	import * as d3 from 'd3';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { CONTROLS, fmtInt, fmtUSD, fmtUSDk, tuitionOf } from '$lib/data/summarize.js';
 	import { createTooltip } from './tooltip.js';
 
-	let { schools, xMax, residency, range, selectedSchool = null, onrange } = $props();
+	let {
+		schools,
+		xMax,
+		residency,
+		range,
+		selectedSchool = null,
+		height = 300,
+		emphasis = null, // scroll-story highlight: control keys kept in color; others are grayed, not removed
+		onrange
+	} = $props();
 
 	const BIN = 2500;
 	const GAP = 2;
-	const height = 300;
 	const margin = { top: 34, right: 14, bottom: 46, left: 44 };
 
 	let width = $state(0);
 	let svgEl;
 	let tooltip;
 	let brush;
-	let brushWidth = 0;
+	let brushKey = '';
 
 	// Fixed axes: xMax (from the page) covers both residency modes and y is the tallest bin in
 	// either mode, so toggling in-state/out-of-state never rescales the chart.
@@ -43,8 +51,18 @@
 
 	$effect(() => {
 		if (!width || !svgEl) return;
-		draw(bins[residency], range, selectedSchool, width);
+		draw(bins[residency], range, selectedSchool, width, height);
 	});
+
+	// Emphasis only restyles existing bars, so story steps never redraw the chart or move the brush.
+	$effect(() => applyEmphasis(emphasis));
+
+	function applyEmphasis(keys) {
+		if (!svgEl) return;
+		d3.select(svgEl)
+			.selectAll('g.bars path')
+			.classed('dimmed', (d) => !!keys && !keys.includes(d.control.key));
+	}
 
 	function segPath(x0, x1, yBottom, yTop, r) {
 		const h = yBottom - yTop;
@@ -52,7 +70,7 @@
 		return `M${x0},${yBottom}V${yTop + rr}Q${x0},${yTop} ${x0 + rr},${yTop}H${x1 - rr}Q${x1},${yTop} ${x1},${yTop + rr}V${yBottom}Z`;
 	}
 
-	function draw(binData, range, selectedSchool, width) {
+	function draw(binData, range, selectedSchool, width, height) {
 		const innerW = width - margin.left - margin.right;
 		const innerH = height - margin.top - margin.bottom;
 		const x = d3.scaleLinear().domain([0, xMax]).range([0, innerW]);
@@ -149,6 +167,7 @@
 			)
 			.attr('fill', (d) => d.control.color)
 			.attr('opacity', (d) => (inRange(d.bin) ? 1 : 0.22));
+		applyEmphasis(untrack(() => emphasis));
 
 		// Selected school marker
 		const school = selectedSchool;
@@ -177,11 +196,11 @@
 			.attr('fill', 'var(--ink)')
 			.text((d) => `${truncate(d.school.name, innerW < 420 ? 24 : 40)} · ${fmtUSD(d.t)}`);
 
-		// Brush (re-created when the width changes)
+		// Brush (re-created when the plot size changes)
 		let brushG = root.select('g.brush');
-		if (brushG.empty() || brushWidth !== innerW) {
+		if (brushG.empty() || brushKey !== `${innerW}x${innerH}`) {
 			brushG.remove();
-			brushWidth = innerW;
+			brushKey = `${innerW}x${innerH}`;
 			brush = d3
 				.brushX()
 				.extent([
@@ -240,13 +259,21 @@
 
 <div class="legend ui" aria-hidden="true">
 	{#each CONTROLS as c (c.key)}
-		<span class="key"><span class="swatch" style:background={c.color}></span>{c.label}</span>
+		<span class="key" class:dimmed={emphasis && !emphasis.includes(c.key)}>
+			<span class="swatch" style:background={c.color}></span>{c.label}
+		</span>
 	{/each}
 	{#if selectedSchool}
 		<span class="key"><span class="school-key"></span>Your school</span>
 	{/if}
 </div>
-<div class="chart" bind:clientWidth={width}>
+{#if emphasis || range}
+	<p class="status ui" aria-live="polite">
+		{#if emphasis}<span><span class="dim-key"></span>Gray bars are dimmed for emphasis; every school is still counted.</span>{/if}
+		{#if range}<span><span class="fade-key"></span>Faded bars fall outside your selected tuition range.</span>{/if}
+	</p>
+{/if}
+<div class="chart" bind:clientWidth={width} style:min-height="{height}px">
 	<svg bind:this={svgEl} role="img" aria-label={ariaLabel}></svg>
 </div>
 
@@ -269,6 +296,46 @@
 		height: 12px;
 		border-radius: 3px;
 	}
+	.key.dimmed {
+		color: var(--muted);
+	}
+	.key.dimmed .swatch {
+		background: var(--dim) !important;
+	}
+	.status {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 16px;
+		margin: 0 0 4px;
+		font-size: 12px;
+		color: var(--ink-2);
+	}
+	.status > span {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.dim-key,
+	.fade-key {
+		width: 12px;
+		height: 12px;
+		border-radius: 3px;
+		background: var(--dim);
+	}
+	.fade-key {
+		background: var(--c-public);
+		opacity: 0.22;
+	}
+	.chart :global(g.bars path.dimmed) {
+		fill: var(--dim);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.chart :global(g.bars path) {
+			transition:
+				fill 250ms ease,
+				opacity 250ms ease;
+		}
+	}
 	.school-key {
 		width: 2px;
 		height: 14px;
@@ -276,7 +343,6 @@
 	}
 	.chart {
 		width: 100%;
-		min-height: 300px;
 	}
 	.chart :global(.brush .overlay) {
 		cursor: crosshair;
