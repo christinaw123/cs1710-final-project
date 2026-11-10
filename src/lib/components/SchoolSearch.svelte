@@ -50,8 +50,12 @@
 </script>
 
 <div class="search ui">
-	<label for={id}>Find a college</label>
+	<label for={id}>Find your college</label>
 	<div class="field">
+		<svg class="icon" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+			<circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2" />
+			<path d="M13 13l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+		</svg>
 		<input
 			{id}
 			type="search"
@@ -104,17 +108,35 @@
 	}
 	label {
 		display: block;
-		font-size: 12px;
-		color: var(--ink-2);
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--ink);
 		margin-bottom: 4px;
 	}
 	.field {
+		position: relative;
 		display: flex;
 		gap: 6px;
+	}
+	.icon {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--ink-2);
+		pointer-events: none;
 	}
 	input {
 		width: 100%;
 		min-width: 0;
+		/* 16px also keeps iOS Safari from zooming in on focus */
+		font-size: 16px;
+		padding: 9px 12px 9px 38px;
+		border: 1.5px solid var(--ink-2);
+		border-radius: 10px;
+	}
+	input:focus {
+		border-color: var(--ink);
 	}
 	ul {
 		position: absolute;

@@ -74,6 +74,32 @@ async function readState(page, section) {
 	}, section);
 }
 
+// Opening hook: the two-person panel shows each step's net worth (Forbes) and the schools' tuition from our data.
+const HOOK_WORTH = [['—', '—'], ['—', '—'], ['$113B', '$4.7B'], ['$224B', '$154B']];
+async function walkHook(page, label, shots = false) {
+	const tuition = await page.$$eval('#hook .person .school', (els) => els.map((e) => e.textContent.replace(/\s+/g, ' ')));
+	check(
+		`${label}: hook shows both schools' tuition from the data`,
+		tuition[0]?.includes('$50,958') && tuition[1]?.includes('$11,545'),
+		tuition.join(' | ')
+	);
+	const order = [0, 1, 2, 3, 2, 1, 0];
+	for (let k = 0; k < order.length; k++) {
+		const i = order[k];
+		await scrollToStep(page, 'hook', i);
+		const st = await page.evaluate(() => ({
+			active: [...document.querySelectorAll('#hook .hook-step')].findIndex((e) => e.classList.contains('active')),
+			worth: ['bezos', 'huang'].map((p) => document.querySelector(`[data-testid="hook-worth-${p}"]`).textContent.trim())
+		}));
+		check(
+			`${label}: hook step ${i + 1} (${k < 4 ? 'down' : 'up'})`,
+			st.active === i && JSON.stringify(st.worth) === JSON.stringify(HOOK_WORTH[i]),
+			`active=${st.active + 1}, net worth ${st.worth.join(' / ')}`
+		);
+		if (shots && k < 4) await page.screenshot({ path: `${out}${label}-hook-step${i + 1}.png` });
+	}
+}
+
 async function walk(page, label, shots = false) {
 	for (const section of ['cost', 'earnings']) {
 		const order = [0, 1, 2, 3, 2, 1, 0]; // down, then back up
@@ -102,6 +128,7 @@ async function walk(page, label, shots = false) {
 try {
 	// ---------------------------------------------------------------- desktop
 	const { page, errors } = await openPage(1280, 900);
+	await walkHook(page, 'desktop', true);
 	await walk(page, 'desktop', true);
 
 	// User selections survive scrolling: set range, college, residency and major, then walk the story.
@@ -151,7 +178,7 @@ try {
 	const lo = Number((brushed.match(/Selected: \$([\d,]+)/)?.[1] ?? 'NaN').replace(/,/g, ''));
 	check('brushing in the sticky chart updates the range', Math.abs(lo - 30000) <= 500, brushed); // brush snaps to $100
 	await page.screenshot({ path: `${out}desktop-brush-mid-story.png` });
-	await page.click('.sel-line .link');
+	await page.click('.sel-line [data-testid="reset"]');
 	await pause();
 	const cleared = await page.$eval('[data-testid="range-readout"]', (e) => e.textContent.trim());
 	check('reset inside the sticky graphic clears the range', cleared.startsWith('No range selected'));
@@ -167,15 +194,16 @@ try {
 
 	// ---------------------------------------------------------------- mobile
 	const m = await openPage(390, 844);
+	await walkHook(m.page, 'mobile', true);
 	await walk(m.page, 'mobile', true);
 	const overflow = await m.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 	check('mobile: no horizontal scroll', overflow <= 0, `overflow ${overflow}px`);
-	for (const section of ['cost', 'earnings']) {
+	for (const section of ['hook', 'cost', 'earnings']) {
 		for (const i of [0, 1, 2, 3]) {
 			await scrollToStep(m.page, section, i);
 			const r = await m.page.evaluate(
 				(section, i) => {
-					const s = document.querySelector(`#${section} .sticky`).getBoundingClientRect();
+					const s = document.querySelector(`#${section} .sticky, #${section} .hook-panel`).getBoundingClientRect();
 					const t = document.querySelector(`#${section} [data-step="${i}"]`).getBoundingClientRect();
 					return { stickyBottom: Math.round(s.bottom), stepTop: Math.round(t.top), stepBottom: Math.round(t.bottom), vh: innerHeight };
 				},

@@ -42,6 +42,43 @@
 	let earningsStickyH = $state(0);
 	let earningsPanel = $state(null);
 
+	// Opening hook: two electrical engineers, one Ivy League and one state school.
+	// Net worths are Forbes World's Billionaires list values (as of March 18, 2020 and March 1, 2026);
+	// tuition comes from our own College Scorecard data (see Appendix D on the page).
+	let hookStep = $state(null);
+	let hookPanelH = $state(0);
+	const HOOK_PEOPLE = [
+		{ key: 'bezos', name: 'Jeff Bezos', short: 'Bezos', school: 'Princeton', type: 'private nonprofit (Ivy League)', unitid: '186131', color: 'var(--c-nonprofit)', inState: false },
+		{ key: 'huang', name: 'Jensen Huang', short: 'Huang', school: 'Oregon State', type: 'public', unitid: '209542', color: 'var(--c-public)', inState: true }
+	];
+	const HOOK_MAX = 224; // largest net worth shown, in $ billions, so both bars share one scale
+	const HOOK_STEPS = [
+		{
+			label: 'College',
+			bezos: { when: '1986', text: 'Graduates from Princeton in electrical engineering and computer science.', cap: 'new graduate' },
+			huang: { when: '1984', text: 'Graduates from Oregon State in electrical engineering.', cap: 'new graduate' }
+		},
+		{
+			label: 'At 30, a start-up',
+			bezos: { when: '1994', text: 'Quits a Wall Street job and starts Amazon in his garage.', cap: 'not yet a billionaire' },
+			huang: {
+				when: '1993',
+				text: 'Co-founds Nvidia with two friends, planning it at a Denny’s. He had finished a Stanford master’s the year before while working full time.',
+				cap: 'not yet a billionaire'
+			}
+		},
+		{
+			label: '2020',
+			bezos: { when: '2020', text: 'The richest person in the world, worth $113 billion.', worth: 113, source: 'Forbes' },
+			huang: { when: '2020', text: 'Worth $4.7 billion, about 1/24 of Bezos’s fortune.', worth: 4.7, source: 'Forbes' }
+		},
+		{
+			label: '2026',
+			bezos: { when: '2026', text: 'No. 4 in the world, worth $224 billion.', worth: 224, source: 'Forbes' },
+			huang: { when: '2026', text: 'No. 8 in the world, worth $154 billion, as Nvidia’s chips power the AI boom.', worth: 154, source: 'Forbes' }
+		}
+	];
+
 	onMount(async () => {
 		try {
 			data = await loadData(base);
@@ -200,7 +237,8 @@
 	const stepState = (step, i) => (step === null ? '' : step === i ? 'active' : 'inactive');
 
 	// Earnings rows shrink (within limits) so the chart fits its sticky slot on wide screens.
-	const earningsRowHeight = $derived(Math.floor((vh - 250) / Math.max(rows.length, 1)));
+	// 310px covers the controls, compare bar, legend and axes above and below the rows.
+	const earningsRowHeight = $derived(Math.floor((vh - 310) / Math.max(rows.length, 1)));
 
 	// When the sticky earnings panel is shorter than the chart (small screens), bring the emphasized
 	// rows into view inside the panel. This scrolls the panel only, never the page.
@@ -237,45 +275,9 @@
 
 <header class="hero">
 	<div class="wrap">
-		<p class="kicker">CS171 final project · Prototype V1</p>
+		<p class="kicker">CS1710 final project</p>
 		<h1>Does a more expensive college mean a bigger paycheck?</h1>
-		<p class="dek">
-			Every year, families weigh college prices against what a degree might pay. We compared the published prices of
-			four-year colleges with what their bachelor’s graduates reported earning one year after finishing, major by
-			major, using the U.S. Department of Education’s College Scorecard.
-		</p>
-		<dl class="scope ui">
-			<div>
-				<dt>Graduates</dt>
-				<dd>Bachelor’s degrees awarded in 2020–21 and 2021–22</dd>
-			</div>
-			<div>
-				<dt>Earnings</dt>
-				<dd>1 year after graduating (measured in 2022 and 2023), in 2024 dollars</dd>
-			</div>
-			<div>
-				<dt>Prices</dt>
-				<dd>Published tuition and fees, averaged over 2017–18 to 2021–22, the years these classes were enrolled</dd>
-			</div>
-			<div>
-				<dt>Colleges</dt>
-				<dd>
-					{#if f}{fmtInt(f.scope.schools)} predominantly bachelor’s-granting public and private schools{:else}Loading…{/if}
-				</dd>
-			</div>
-		</dl>
-		{#if f}
-			<aside class="callout">
-				<strong>The published price is not the same as what students pay.</strong>
-				At the median private nonprofit school here, published tuition and fees averaged
-				{fmtUSD(tuitionMed('Private nonprofit').tuition_in_median)} a year, but the average net price (the full cost of
-				attendance, including housing, food and books, minus grants, for first-time full-time students who received aid)
-				was {fmtUSD(tuitionMed('Private nonprofit').net_price_median)}. At public schools it runs the other way: in-state
-				tuition was {fmtUSD(tuitionMed('Public').tuition_in_median)} but net price was
-				{fmtUSD(tuitionMed('Public').net_price_median)}, because net price includes living costs. The charts below use
-				published tuition, so they compare sticker prices.
-			</aside>
-		{/if}
+		<p class="dek">Let us first look at the story of two engineers who ended up becoming billionares. One went to an Ivy League school, the other to a state school.</p>
 	</div>
 </header>
 
@@ -296,28 +298,75 @@
 			<div class="state ui" aria-live="polite">Loading College Scorecard data…</div>
 		</section>
 	{:else}
+		<!-- 1. HOOK: two billionaires, same major, very different colleges -->
+		<section class="wrap" id="hook">
+			<Scrolly bind:step={hookStep} class="hook-scrolly" style="--hook-h: {hookPanelH}px">
+				<div class="hook-graphic">
+					<div class="hook-panel" bind:clientHeight={hookPanelH}>
+						{#each HOOK_PEOPLE as p (p.key)}
+							{@const s = HOOK_STEPS[hookStep ?? 0][p.key]}
+							{@const school = schoolById.get(p.unitid)}
+							<div class="person" style="--person-color: {p.color}">
+								<p class="who">{p.name}</p>
+								<p class="school ui">
+									<span class="swatch" style:background={p.color}></span>{p.school} · {p.type}<br />
+									Tuition & fees {fmtUSD(school?.tuition_in)}/yr{p.inState ? ' in-state' : ''}
+								</p>
+								<p class="worth" data-testid="hook-worth-{p.key}">{s.worth ? `$${s.worth}B` : '—'}</p>
+								<p class="worth-cap ui">{s.when} · {s.worth ? `net worth (${s.source})` : s.cap}</p>
+								<div class="worth-bar" aria-hidden="true">
+									<span style:width="{s.worth ? Math.max(0.6, (s.worth / HOOK_MAX) * 100) : 0}%"></span>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+				<ol class="hook-steps" aria-label="Two billionaires">
+					{#each HOOK_STEPS as st, i (st.label)}
+						<li class="hook-step {stepState(hookStep, i)}" data-step={i}>
+							<p class="hook-label ui">{st.label}</p>
+							<div class="hook-cols">
+								{#each HOOK_PEOPLE as p (p.key)}
+									<p><strong>{p.short}, {st[p.key].when}.</strong> {st[p.key].text}</p>
+								{/each}
+							</div>
+						</li>
+					{/each}
+				</ol>
+			</Scrolly>
+
+			<div class="hook-end">
+				<p class="hook-sum">Different people. Different companies. Very different colleges. Both are now among the ten richest people on Earth.</p>
+				<p class="hook-q">So does the college you go to matter?</p>
+			</div>
+
+			<div class="bridge">
+				<p class="prose">
+					Most families treat college as an investment: pay tuition now for a
+					bigger paycheck later. So we followed typical graduates, the bachelor’s graduates of
+					{fmtInt(data.schools.length)} colleges, in two steps.
+				</p>
+			</div>
+		</section>
+
 		<!-- 2. COST -->
 		<section class="wrap" id="cost" data-xmax={xMaxTuition}>
 			<p class="step ui">1 · What does college cost?</p>
 			<h2>Published tuition ranges widely, and the type of school explains much of it</h2>
-			<p class="prose">
-				Scroll to step through the chart. Every control works at any point, and the full readout, source notes and
-				summary table follow the story.
-			</p>
 
 			<Scrolly bind:step={tuitionStep} class="scrolly" style="--sticky-h: {tuitionStickyH}px">
 				<div class="graphic">
 					<div class="sticky" bind:clientHeight={tuitionStickyH}>
-						<div class="controls compact ui">
-							<div class="control">
+						<div class="controls compact chart-controls ui">
+							<div class="control search-control">
+								<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={(s) => (selectedSchool = s)} />
+							</div>
+							<div class="control res-control">
 								<span class="label" id="res-label">Public schools’ price</span>
 								<div class="segmented" role="group" aria-labelledby="res-label">
 									<button aria-pressed={residency === 'in'} onclick={() => (residency = 'in')}>In-state</button>
 									<button aria-pressed={residency === 'out'} onclick={() => (residency = 'out')}>Out-of-state</button>
 								</div>
-							</div>
-							<div class="control grow">
-								<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={(s) => (selectedSchool = s)} />
 							</div>
 						</div>
 						<figure class="figure">
@@ -331,15 +380,24 @@
 								emphasis={tuitionEmphasis}
 								onrange={(r) => (range = r)}
 							/>
-							<p class="sel-line ui">
-								{#if range}
-									<strong>Selected {fmtUSD(range[0])}–{fmtUSD(range[1])}</strong> · {fmtInt(selIds.size)}
-									{selIds.size === 1 ? 'school' : 'schools'}
-									<button class="link" onclick={() => (range = null)}>Reset</button>
-								{:else}
-									Drag across the chart to select a tuition range.
-								{/if}
-							</p>
+							<div class="sel-line ui">
+								<p data-testid="range-readout" aria-live="polite">
+									{#if range}
+										<strong>Selected: {fmtUSD(range[0])} – {fmtUSD(range[1])}</strong> · {fmtInt(selIds.size)}
+										{selIds.size === 1 ? 'school' : 'schools'}
+									{:else}
+										<strong>No range selected.</strong>
+										<span class="hint-long">Drag across the chart, or type a range:</span><span class="hint-short">Drag on the chart or type:</span>
+									{/if}
+								</p>
+								<div class="range-inputs">
+									<label>From $<input id="range-lo" type="number" min="0" step="500" value={range ? range[0] : ''}
+											onchange={(e) => setRangeFromInputs(e.currentTarget.value, range ? range[1] : xMaxTuition)} /></label>
+									<label>to $<input id="range-hi" type="number" min="0" step="500" value={range ? range[1] : ''}
+											onchange={(e) => setRangeFromInputs(range ? range[0] : 0, e.currentTarget.value)} /></label>
+									<button class="btn" data-testid="reset" onclick={() => (range = null)} disabled={!range}>Reset</button>
+								</div>
+							</div>
 						</figure>
 					</div>
 				</div>
@@ -370,31 +428,7 @@
 				</ol>
 			</Scrolly>
 
-			<div class="readout ui">
-				<p data-testid="range-readout" aria-live="polite">
-					{#if range}
-						<strong>Selected: {fmtUSD(range[0])} – {fmtUSD(range[1])}</strong> ·
-						{fmtInt(selIds.size)} {selIds.size === 1 ? 'school' : 'schools'}
-						({byControl.map((c) => `${fmtInt(c.n)} ${c.label.toLowerCase()}`).join(', ')})
-					{:else}
-						<strong>No range selected:</strong> showing all {fmtInt(data.schools.length)} schools. Drag across the
-						chart, or type a range.
-					{/if}
-				</p>
-				<div class="range-inputs">
-					<label>From $<input id="range-lo" type="number" min="0" step="500" value={range ? range[0] : ''}
-							onchange={(e) => setRangeFromInputs(e.currentTarget.value, range ? range[1] : xMaxTuition)} /></label>
-					<label>to $<input id="range-hi" type="number" min="0" step="500" value={range ? range[1] : ''}
-							onchange={(e) => setRangeFromInputs(range ? range[0] : 0, e.currentTarget.value)} /></label>
-					<button class="btn" data-testid="reset" onclick={() => (range = null)} disabled={!range}>Reset to all schools</button>
-				</div>
-			</div>
-			<p class="source ui">
-				Each bar counts <strong>schools</strong> (each school counts once, regardless of size) whose average published
-				{residency === 'out' ? 'out-of-state' : 'in-state'} tuition and fees from 2017–18 to 2021–22 fall in a $2,500 band.
-				The in-state/out-of-state switch mostly changes public schools; nearly all private schools publish one price.
-				Nominal dollars. Source: College Scorecard.
-			</p>
+			<p class="notes-link ui">How to read this chart, sources and a summary table by school type: <a href="#appendix-b">Appendix B</a></p>
 
 			{#if selectedSchool}
 				<div class="school-card ui">
@@ -413,28 +447,6 @@
 				</div>
 			{/if}
 
-			<div class="table-scroll">
-			<table class="summary ui">
-				<caption>
-					{range ? 'Selected range' : 'All schools'}: published {residency === 'out' ? 'out-of-state' : 'in-state'} tuition
-					by type (each school counts once)
-				</caption>
-				<thead>
-					<tr><th scope="col">Type</th><th scope="col">Schools</th><th scope="col">Median tuition</th><th scope="col">Middle 50%</th><th scope="col">Median net price</th></tr>
-				</thead>
-				<tbody>
-					{#each byControl as c (c.key)}
-						<tr>
-							<th scope="row"><span class="swatch" style:background={c.color}></span>{c.label}</th>
-							<td>{fmtInt(c.n)}</td>
-							<td>{fmtUSD(c.med)}</td>
-							<td>{c.n ? `${fmtUSDk(c.p25)}–${fmtUSDk(c.p75)}` : '—'}</td>
-							<td>{fmtUSD(c.net)}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-			</div>
 		</section>
 
 		<!-- 3. EARNINGS -->
@@ -442,15 +454,38 @@
 			<p class="step ui">2 · What do graduates earn?</p>
 			<h2>Early earnings depend heavily on the major</h2>
 			<p class="prose">
-				A <em>program</em> is one major at one college. For each program, the Scorecard reports the median earnings, one
-				year after graduation, of graduates who received federal financial aid, worked that year, and were not enrolled
-				in school. Small programs are suppressed for privacy, so the reported programs cover
-				{fmtPct(f.scope.degree_share_in_programs_with_earnings, 0)} of the degrees in our data.
+				A <em>program</em> is one major at one college. Each one reports what its graduates typically earned a year after
+				finishing.
 			</p>
 
 			<Scrolly bind:step={earningsStep} class="scrolly" style="--sticky-h: {earningsStickyH}px">
 				<div class="graphic">
 					<div class="sticky scrollable" bind:this={earningsPanel} bind:clientHeight={earningsStickyH}>
+						<div class="controls compact chart-controls panel-head ui">
+							<div class="control">
+								<span class="label" id="sort-label">Order majors by</span>
+								<div class="segmented" role="group" aria-labelledby="sort-label">
+									<button aria-pressed={sortBy === 'deg'} onclick={() => (sortBy = 'deg')}>Most degrees</button>
+									<button aria-pressed={sortBy === 'high'} onclick={() => (sortBy = 'high')}>Highest pay</button>
+									<button aria-pressed={sortBy === 'low'} onclick={() => (sortBy = 'low')}>Lowest pay</button>
+								</div>
+							</div>
+							<div class="control">
+								<span class="label" id="n-label">Show</span>
+								<div class="segmented" role="group" aria-labelledby="n-label">
+									<button aria-pressed={topN === 20} onclick={() => (topN = 20)}>Top 20</button>
+									<button aria-pressed={topN === 40} onclick={() => (topN = 40)}>Top 40</button>
+								</div>
+							</div>
+							<div class="control grow">
+								<label class="label" for="major-select">Major</label>
+								<select id="major-select" bind:value={selectedMajor}>
+									{#each majorOptions as m (m.cip)}
+										<option value={m.cip}>{m.title}</option>
+									{/each}
+								</select>
+							</div>
+						</div>
 						<div class="compare-bar ui" class:active={range}>
 							{#if range}
 								Comparing <span class="key-band"></span> <strong>all {fmtInt(data.schools.length)} schools</strong> with
@@ -515,48 +550,14 @@
 						of the 20 most common majors, the middle half of programs typically spans about {fmtUSD(story.withinIqr)}.
 					</li>
 					<li class="story-step {stepState(earningsStep, 3)}" data-step="3">
-						<strong>Now compare for yourself.</strong> All majors are back. Click a row, or use the major menu below the
+						<strong>Now compare for yourself.</strong> All majors are back. Click a row, or use the major menu above the
 						chart, to see every college’s program. Select a tuition range above to compare those schools with all
 						schools.
 					</li>
 				</ol>
 			</Scrolly>
 
-			<div class="controls ui">
-				<div class="control">
-					<span class="label" id="sort-label">Order majors by</span>
-					<div class="segmented" role="group" aria-labelledby="sort-label">
-						<button aria-pressed={sortBy === 'deg'} onclick={() => (sortBy = 'deg')}>Most degrees</button>
-						<button aria-pressed={sortBy === 'high'} onclick={() => (sortBy = 'high')}>Highest earnings</button>
-						<button aria-pressed={sortBy === 'low'} onclick={() => (sortBy = 'low')}>Lowest earnings</button>
-					</div>
-				</div>
-				<div class="control">
-					<span class="label" id="n-label">Show</span>
-					<div class="segmented" role="group" aria-labelledby="n-label">
-						<button aria-pressed={topN === 20} onclick={() => (topN = 20)}>Top 20</button>
-						<button aria-pressed={topN === 40} onclick={() => (topN = 40)}>Top 40</button>
-					</div>
-				</div>
-				<div class="control grow">
-					<label class="label" for="major-select">Major</label>
-					<select id="major-select" bind:value={selectedMajor}>
-						{#each majorOptions as m (m.cip)}
-							<option value={m.cip}>{m.title}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-			<p class="source ui">
-				Rows are majors (4-digit CIP codes), ranked by bachelor’s degrees awarded at all schools. Sorting always uses
-				the all-schools values, so rows do not jump when you filter, and the earnings axis is fixed at
-				{fmtUSDk(earnDomain[0])}–{fmtUSDk(earnDomain[1])} (values beyond it are drawn at the edge and marked ›). The
-				<strong>median program</strong> is the middle value of programs’ reported medians: each program counts once
-				regardless of size, so it is not the median graduate. The <strong>middle 50%</strong> runs from the 25th to the
-				75th percentile of programs. Majors with fewer than {MIN_PROGRAMS_FOR_INTERVAL} reporting programs show
-				individual programs as open circles. Share of degrees is weighted by degrees awarded in 2020–21 and 2021–22.
-				Dimmed rows during the story are de-emphasized, never filtered out. Source: College Scorecard.
-			</p>
+			<p class="notes-link ui">How to read this chart and where the earnings come from: <a href="#appendix-c">Appendix C</a></p>
 
 			{#if selectedMajor}
 				<div class="detail" id="major-detail">
@@ -671,6 +672,114 @@
 			<p class="step ui">5 · Takeaway</p>
 			<div class="placeholder ui">Placeholder: content coming soon.</div>
 		</section>
+
+		<!-- 7. APPENDIX: data notes moved out of the story so the charts stay uncluttered -->
+		<section class="wrap appendix" id="appendix">
+			<p class="step ui">Appendix</p>
+			<h2>Data notes and sources</h2>
+
+			<article id="appendix-a">
+				<h3>A · About the data</h3>
+				<p class="small">
+					We compared the published prices of four-year colleges with what their bachelor’s graduates reported earning
+					one year after finishing, major by major, using the U.S. Department of Education’s College Scorecard.
+				</p>
+				<dl class="scope ui">
+					<div>
+						<dt>Graduates</dt>
+						<dd>Bachelor’s degrees awarded in 2020–21 and 2021–22</dd>
+					</div>
+					<div>
+						<dt>Earnings</dt>
+						<dd>1 year after graduating (measured in 2022 and 2023), in 2024 dollars</dd>
+					</div>
+					<div>
+						<dt>Prices</dt>
+						<dd>Published tuition and fees, averaged over 2017–18 to 2021–22, the years these classes were enrolled</dd>
+					</div>
+					<div>
+						<dt>Colleges</dt>
+						<dd>{fmtInt(f.scope.schools)} predominantly bachelor’s-granting public and private schools</dd>
+					</div>
+				</dl>
+				<aside class="callout">
+					<strong>The published price is not the same as what students pay.</strong>
+					At the median private nonprofit school here, published tuition and fees averaged
+					{fmtUSD(tuitionMed('Private nonprofit').tuition_in_median)} a year, but the average net price (the full cost of
+					attendance, including housing, food and books, minus grants, for first-time full-time students who received aid)
+					was {fmtUSD(tuitionMed('Private nonprofit').net_price_median)}. At public schools it runs the other way: in-state
+					tuition was {fmtUSD(tuitionMed('Public').tuition_in_median)} but net price was
+					{fmtUSD(tuitionMed('Public').net_price_median)}, because net price includes living costs. The charts use
+					published tuition, so they compare sticker prices.
+				</aside>
+			</article>
+
+			<article id="appendix-b">
+				<h3>B · Tuition chart</h3>
+				<p class="source ui">
+					Each bar counts <strong>schools</strong> (each school counts once, regardless of size) whose average published
+					{residency === 'out' ? 'out-of-state' : 'in-state'} tuition and fees from 2017–18 to 2021–22 fall in a $2,500
+					band. The in-state/out-of-state switch mostly changes public schools; nearly all private schools publish one
+					price. Nominal dollars. Source: College Scorecard.
+				</p>
+				<div class="table-scroll">
+					<table class="summary ui">
+						<caption>
+							{range ? 'Selected range' : 'All schools'}: published {residency === 'out' ? 'out-of-state' : 'in-state'}
+							tuition by type (each school counts once)
+						</caption>
+						<thead>
+							<tr><th scope="col">Type</th><th scope="col">Schools</th><th scope="col">Median tuition</th><th scope="col">Middle 50%</th><th scope="col">Median net price</th></tr>
+						</thead>
+						<tbody>
+							{#each byControl as c (c.key)}
+								<tr>
+									<th scope="row"><span class="swatch" style:background={c.color}></span>{c.label}</th>
+									<td>{fmtInt(c.n)}</td>
+									<td>{fmtUSD(c.med)}</td>
+									<td>{c.n ? `${fmtUSDk(c.p25)}–${fmtUSDk(c.p75)}` : '—'}</td>
+									<td>{fmtUSD(c.net)}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				<p class="back ui"><a href="#cost">↑ Back to the tuition chart</a></p>
+			</article>
+
+			<article id="appendix-c">
+				<h3>C · Earnings chart</h3>
+				<p class="source ui">
+					For each program (one major at one college), the Scorecard reports the median earnings, one year after
+					graduation, of graduates who received federal financial aid, worked that year, and were not enrolled in school.
+					Small programs are suppressed for privacy, so the reported programs cover
+					{fmtPct(f.scope.degree_share_in_programs_with_earnings, 0)} of the degrees in our data.
+				</p>
+				<p class="source ui">
+					Rows are majors (4-digit CIP codes), ranked by bachelor’s degrees awarded at all schools. Sorting always uses the
+					all-schools values, so rows do not jump when you filter, and the earnings axis is fixed at
+					{fmtUSDk(earnDomain[0])}–{fmtUSDk(earnDomain[1])} (values beyond it are drawn at the edge and marked ›). The
+					<strong>median program</strong> is the middle value of programs’ reported medians: each program counts once
+					regardless of size, so it is not the median graduate. The <strong>middle 50%</strong> runs from the 25th to the
+					75th percentile of programs. Majors with fewer than {MIN_PROGRAMS_FOR_INTERVAL} reporting programs show
+					individual programs as open circles. Share of degrees is weighted by degrees awarded in 2020–21 and 2021–22.
+					Dimmed rows during the story are de-emphasized, never filtered out. Source: College Scorecard.
+				</p>
+				<p class="back ui"><a href="#earnings">↑ Back to the earnings chart</a></p>
+			</article>
+
+			<article id="appendix-d">
+				<h3>D · The two billionaires</h3>
+				<p class="source ui">
+					Net worths come from Forbes’ annual World’s Billionaires lists, which use stock prices from March 18, 2020 and
+					March 1, 2026. Tuition is the published 2017–18 to
+					2021–22 average from College Scorecard, the same figures as the tuition chart; Oregon State’s is the in-state
+					price. Two people are anecdotes, not evidence. They set up the question that the rest of the page answers with
+					data.
+				</p>
+				<p class="back ui"><a href="#hook">↑ Back to the top</a></p>
+			</article>
+		</section>
 	{/if}
 </main>
 
@@ -738,7 +847,7 @@
 
 	/* section.wrap (not section) so .wrap's `padding: 0 24px` doesn't cancel the top spacing */
 	section.wrap {
-		padding-top: 72px;
+		padding-top: clamp(140px, 24vh, 240px);
 	}
 	.step {
 		font-size: 13px;
@@ -809,20 +918,6 @@
 		color: var(--ink-2);
 		max-width: 760px;
 	}
-	.readout {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: center;
-		gap: 8px 16px;
-		font-size: 14px;
-		margin-top: 8px;
-		padding-top: 12px;
-		border-top: 1px solid var(--grid);
-	}
-	.readout p {
-		margin: 0;
-	}
 	.range-inputs {
 		display: flex;
 		flex-wrap: wrap;
@@ -832,6 +927,21 @@
 	.range-inputs input {
 		width: 92px;
 		margin-left: 4px;
+	}
+	/* Chart controls sit at the top of each sticky graphic so they read as belonging to that chart. */
+	.chart-controls .search-control {
+		flex: 1 1 320px;
+	}
+	/* The earnings panel can scroll internally (Top 40, short windows, phones); keep its controls pinned. */
+	.panel-head {
+		position: sticky;
+		top: 0;
+		z-index: 3;
+		padding-bottom: 10px;
+		background: var(--page);
+	}
+	.panel-head .control.grow {
+		flex-basis: 200px;
 	}
 	.school-card {
 		margin-top: 16px;
@@ -962,9 +1072,35 @@
 		padding: 14px 16px;
 	}
 	.sel-line {
-		margin: 6px 0 0;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 6px 16px;
+		margin: 10px 0 0;
+		padding-top: 10px;
+		border-top: 1px solid var(--grid);
 		font-size: 13px;
 		color: var(--ink-2);
+	}
+	.sel-line p {
+		margin: 0;
+	}
+	.sel-line strong {
+		color: var(--ink);
+	}
+	.sel-line .range-inputs input {
+		width: 84px;
+		padding: 4px 8px;
+	}
+	.sel-line .btn {
+		padding: 4px 10px;
+	}
+	.sel-line .range-inputs label {
+		white-space: nowrap;
+	}
+	.hint-short {
+		display: none;
 	}
 	.emphasis-note {
 		display: flex;
@@ -1202,6 +1338,177 @@
 		margin-bottom: 8px;
 	}
 
+	/* ---- Hook: a sticky two-person panel on top, two-column story cards scrolling underneath ---- */
+	#hook {
+		padding-top: 32px;
+	}
+	.wrap :global(.hook-scrolly) {
+		display: grid;
+		max-width: 820px;
+		margin: 0 auto;
+	}
+	.hook-graphic,
+	.hook-steps {
+		grid-area: 1 / 1;
+		min-width: 0;
+	}
+	.hook-graphic {
+		z-index: 2;
+		pointer-events: none;
+	}
+	.hook-panel {
+		position: sticky;
+		top: 0;
+		pointer-events: auto;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 24px;
+		padding: 16px 0 14px;
+		background: var(--page);
+		border-bottom: 1px solid var(--border);
+	}
+	.person p {
+		margin: 0;
+	}
+	.person .who {
+		font-size: 22px;
+		font-weight: 700;
+	}
+	.person .school {
+		margin: 4px 0 10px;
+		font-size: 13px;
+		line-height: 1.4;
+		color: var(--ink-2);
+	}
+	.person .school .swatch {
+		margin-right: 6px;
+	}
+	.person .worth {
+		font-family: var(--sans);
+		font-size: clamp(30px, 5vw, 44px);
+		font-weight: 700;
+		line-height: 1.1;
+		font-variant-numeric: tabular-nums;
+	}
+	.person .worth-cap {
+		margin: 2px 0 8px;
+		font-size: 12.5px;
+		color: var(--ink-2);
+	}
+	.worth-bar {
+		height: 10px;
+		border-radius: 5px;
+		background: var(--wash);
+		overflow: hidden;
+	}
+	.worth-bar span {
+		display: block;
+		height: 100%;
+		border-radius: 5px;
+		background: var(--person-color);
+	}
+	.hook-steps {
+		position: relative;
+		z-index: 1;
+		list-style: none;
+		margin: 0;
+		padding: calc(var(--hook-h, 0px) + 32px) 0 20vh;
+	}
+	.hook-step {
+		padding: 16px 18px;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
+	.hook-step + .hook-step {
+		margin-top: 45vh;
+	}
+	.hook-step.active {
+		border-color: var(--ink-2);
+	}
+	.hook-step.inactive {
+		opacity: 0.45;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.worth-bar span {
+			transition: width 600ms ease;
+		}
+		.hook-step {
+			transition:
+				opacity 250ms ease,
+				border-color 250ms ease;
+		}
+	}
+	.hook-label {
+		margin: 0 0 8px;
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--ink-2);
+	}
+	.hook-cols {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 24px;
+	}
+	.hook-cols p {
+		margin: 0;
+		font-size: 17px;
+		line-height: 1.5;
+	}
+	.hook-end,
+	.bridge {
+		max-width: 820px;
+		margin: 0 auto;
+	}
+	.hook-end {
+		padding-top: 6vh;
+	}
+	.hook-sum {
+		margin: 0 0 8px;
+		font-size: 20px;
+		color: var(--ink-2);
+	}
+	.hook-q {
+		margin: 0;
+		font-size: clamp(30px, 5vw, 44px);
+		font-weight: 700;
+		line-height: 1.15;
+	}
+	.bridge {
+		margin-top: 64px;
+	}
+	.bridge .prose {
+		margin: 0;
+	}
+	.notes-link {
+		margin: 12px 0 0;
+		font-size: 13px;
+		color: var(--ink-2);
+	}
+
+	/* ---- Appendix ---- */
+	section.appendix {
+		margin-top: 72px;
+		border-top: 1px solid var(--border);
+	}
+	.appendix article {
+		margin-top: 32px;
+		scroll-margin-top: 24px;
+	}
+	.appendix h3 {
+		margin: 0 0 8px;
+		font-size: 19px;
+	}
+	.appendix .summary {
+		margin-top: 12px;
+	}
+	.back {
+		margin: 10px 0 0;
+		font-size: 13px;
+	}
+
 	code {
 		font-size: 0.85em;
 		background: var(--wash);
@@ -1223,5 +1530,72 @@
 		padding: 64px 24px 48px;
 		font-size: 13px;
 		color: var(--muted);
+	}
+
+	/* Phones: the pinned panels share the screen with the story text, so their controls get compact.
+	   Kept last so these rules override the base rules above. */
+	@media (max-width: 600px) {
+		.res-control {
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
+		}
+		.sel-line {
+			gap: 6px;
+		}
+		.hint-long {
+			display: none;
+		}
+		.hint-short {
+			display: inline;
+		}
+		.sel-line .range-inputs {
+			flex-wrap: nowrap;
+			gap: 6px;
+		}
+		.sel-line .range-inputs input {
+			width: 68px;
+			margin-left: 2px;
+		}
+		/* top/padding offset the pinned panel's own 8px top padding so rows can't peek out above the controls */
+		.panel-head {
+			top: -8px;
+			padding-top: 8px;
+			gap: 8px;
+			border-bottom: 1px solid var(--border);
+			margin-bottom: 8px;
+		}
+		/* Visually hidden but still read by screen readers */
+		.panel-head .label {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+		}
+		.panel-head .segmented button {
+			font-size: 13px;
+			padding: 6px 8px;
+		}
+		.panel-head .control.grow {
+			flex: 1 1 140px;
+		}
+		.hook-panel,
+		.hook-cols {
+			gap: 16px;
+		}
+		.person .who {
+			font-size: 18px;
+		}
+		.person .school {
+			font-size: 12px;
+		}
+		.hook-cols p {
+			font-size: 15px;
+		}
+		.hook-step {
+			padding: 14px;
+		}
 	}
 </style>
