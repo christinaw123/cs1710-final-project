@@ -125,8 +125,8 @@ The middle 90% of prices span about 8.5×, and the full range far more, so "tenf
 
 - **Dimmed for emphasis (story):** histogram bars switch to a flat gray at full height, and earnings rows
   drop to 20% opacity. Nothing is removed, counts and axes are unchanged, and dimmed rows still show
-  tooltips. A note in the chart says so ("Gray bars are dimmed for emphasis; every school is still counted"
-  / "Other majors are dimmed for emphasis, not removed"), and so does the step text.
+  tooltips. The earnings chart has a note saying so ("Other majors are dimmed for emphasis, not removed"),
+  and so does the step text.
 - **Filtered out (reader's tuition brush):** bars outside the selected range fade to 22% opacity in their
   own color, with the note "Faded bars fall outside your selected tuition range". The earnings chart keeps
   the all-schools comparison and overlays the selected range in black.

@@ -74,30 +74,88 @@ async function readState(page, section) {
 	}, section);
 }
 
-// Opening hook: the two-person panel shows each step's net worth (Forbes) and the schools' tuition from our data.
-const HOOK_WORTH = [['—', '—'], ['—', '—'], ['$113B', '$4.7B'], ['$224B', '$154B']];
+// Opening hook: a pinned stage. Each scroll step advances one year; Bezos on the left, Huang on the right, and the
+// net-worth panel on top shows each person's latest sourced figure.
+const HOOK_YEARS = [1984, 1986, 1993, 1994, 1999, 2006, 2020, 2026];
+const HOOK_EXPECT = {
+	// visible card on each side (null = that side has disappeared this year), and the top-panel net worth, per year
+	bezosCard: [null, 1986, null, 1994, 1999, 2006, 2020, 2026],
+	huangCard: [1984, null, 1993, null, 1999, 2006, 2020, 2026],
+	bezosWorth: ['—', '—', '—', '—', '$7.8B', '$4.3B', '$113B', '$224B'],
+	huangWorth: ['—', '—', '—', '—', '≈$37M', '≈$390M', '$4.7B', '$154B'],
+	// bar fill (%) toward each person's own peak ($224B Bezos, $154B Huang), with a 1% minimum so tiny values show
+	bezosBar: [0, 0, 0, 0, (7.8 / 224) * 100, (4.3 / 224) * 100, (113 / 224) * 100, 100],
+	huangBar: [0, 0, 0, 0, 1, 1, (4.7 / 154) * 100, 100]
+};
 async function walkHook(page, label, shots = false) {
-	const tuition = await page.$$eval('#hook .person .school', (els) => els.map((e) => e.textContent.replace(/\s+/g, ' ')));
-	check(
-		`${label}: hook shows both schools' tuition from the data`,
-		tuition[0]?.includes('$50,958') && tuition[1]?.includes('$11,545'),
-		tuition.join(' | ')
+	const tuition = await page.evaluate(() =>
+		['bezos', 'huang'].map((p) => document.querySelector(`[data-testid="hook-head-${p}"] .school`).textContent.replace(/\s+/g, ' '))
 	);
-	const order = [0, 1, 2, 3, 2, 1, 0];
+	check(`${label}: hook shows both schools' tuition from the data`, tuition[0]?.includes('$50,958') && tuition[1]?.includes('$11,545'), tuition.join(' | '));
+	const n = HOOK_YEARS.length;
+	const order = [...Array(n).keys(), ...[...Array(n - 1).keys()].reverse()]; // down, then back up
+	let pinned = true;
 	for (let k = 0; k < order.length; k++) {
 		const i = order[k];
 		await scrollToStep(page, 'hook', i);
-		const st = await page.evaluate(() => ({
-			active: [...document.querySelectorAll('#hook .hook-step')].findIndex((e) => e.classList.contains('active')),
-			worth: ['bezos', 'huang'].map((p) => document.querySelector(`[data-testid="hook-worth-${p}"]`).textContent.trim())
-		}));
+		const st = await page.evaluate(() => {
+			// A side "disappears" when its card carries .away (faded out and hidden); only visible cards count.
+			const card = (p) => document.querySelector(`[data-testid="hook-card-${p}"]:not(.away)`);
+			const anyCard = (p) => document.querySelector(`[data-testid="hook-card-${p}"]`);
+			const stage = document.querySelector('[data-testid="hook-stage"]').getBoundingClientRect();
+			return {
+				year: +(document.querySelector('[data-testid="hook-year"]')?.textContent ?? 0),
+				bezosCard: card('bezos') ? +card('bezos').dataset.year : null,
+				huangCard: card('huang') ? +card('huang').dataset.year : null,
+				idle: ['bezos', 'huang'].map((p) => document.querySelector(`[data-testid="hook-head-${p}"]`).classList.contains('idle')),
+				// Only the current year is labeled on the timeline (center line on wide screens, dot row on phones).
+				labels: [...document.querySelectorAll('#hook .year-line .yr, #hook .year-dots .yr')]
+					.filter((e) => e.offsetParent !== null && getComputedStyle(e).visibility === 'visible')
+					.map((e) => +e.textContent),
+				bezosLeft:
+					anyCard('bezos') && anyCard('huang')
+						? anyCard('bezos').getBoundingClientRect().right <= anyCard('huang').getBoundingClientRect().left
+						: true,
+				worth: ['bezos', 'huang'].map((p) => document.querySelector(`[data-testid="hook-worth-${p}"]`).textContent.trim()),
+				bars: ['bezos', 'huang'].map((p) => parseFloat(document.querySelector(`[data-testid="hook-head-${p}"] .worth-bar span`).style.width) || 0),
+				// A photo of a person must never appear before the year it was taken.
+				early: [...document.querySelectorAll('#hook .tl-card:not(.away) img[data-taken]')].some(
+					(img) => img.dataset.taken && +img.dataset.taken > +(document.querySelector('[data-testid="hook-year"]')?.textContent ?? 0)
+				),
+				// The stage stays in place and fits the screen.
+				stageTop: Math.round(stage.top),
+				fits:
+					document.querySelector('.stage-cards').getBoundingClientRect().bottom <= innerHeight + 1 &&
+					stage.top >= -1 &&
+					stage.top <= innerHeight * 0.1
+			};
+		});
+		const ok =
+			st.year === HOOK_YEARS[i] &&
+			st.bezosCard === HOOK_EXPECT.bezosCard[i] &&
+			st.huangCard === HOOK_EXPECT.huangCard[i] &&
+			st.worth[0] === HOOK_EXPECT.bezosWorth[i] &&
+			st.worth[1] === HOOK_EXPECT.huangWorth[i] &&
+			// the net-worth panel dims for whoever has no card this year
+			st.idle[0] === (HOOK_EXPECT.bezosCard[i] == null) &&
+			st.idle[1] === (HOOK_EXPECT.huangCard[i] == null) &&
+			Math.abs(st.bars[0] - HOOK_EXPECT.bezosBar[i]) < 0.5 &&
+			Math.abs(st.bars[1] - HOOK_EXPECT.huangBar[i]) < 0.5 &&
+			st.labels.length === 1 &&
+			st.labels[0] === HOOK_YEARS[i] &&
+			st.bezosLeft &&
+			!st.early;
+		// The first year shows while the stage is still sliding into place; from the second year on, the stage must be
+		// at (or within 10% of) the top with both cards fully on screen.
+		if (i > 0) pinned = pinned && st.fits;
 		check(
-			`${label}: hook step ${i + 1} (${k < 4 ? 'down' : 'up'})`,
-			st.active === i && JSON.stringify(st.worth) === JSON.stringify(HOOK_WORTH[i]),
-			`active=${st.active + 1}, net worth ${st.worth.join(' / ')}`
+			`${label}: hook ${HOOK_YEARS[i]} (${k < n ? 'down' : 'up'})`,
+			ok,
+			`year=${st.year}, cards ${st.bezosCard ?? "–"} | ${st.huangCard ?? "–"}, net worth ${st.worth.join(" / ")}, bars ${st.bars.map((b) => b.toFixed(1)).join("% / ")}%`
 		);
-		if (shots && k < 4) await page.screenshot({ path: `${out}${label}-hook-step${i + 1}.png` });
+		if (shots && k < n) await page.screenshot({ path: `${out}${label}-hook-step${i + 1}.png` });
 	}
+	check(`${label}: hook stage stays in place with both cards on screen from ${HOOK_YEARS[1]} through ${HOOK_YEARS.at(-1)}`, pinned);
 }
 
 async function walk(page, label, shots = false) {
@@ -198,12 +256,12 @@ try {
 	await walk(m.page, 'mobile', true);
 	const overflow = await m.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 	check('mobile: no horizontal scroll', overflow <= 0, `overflow ${overflow}px`);
-	for (const section of ['hook', 'cost', 'earnings']) {
+	for (const section of ['cost', 'earnings']) {
 		for (const i of [0, 1, 2, 3]) {
 			await scrollToStep(m.page, section, i);
 			const r = await m.page.evaluate(
 				(section, i) => {
-					const s = document.querySelector(`#${section} .sticky, #${section} .hook-panel`).getBoundingClientRect();
+					const s = document.querySelector(`#${section} .sticky`).getBoundingClientRect();
 					const t = document.querySelector(`#${section} [data-step="${i}"]`).getBoundingClientRect();
 					return { stickyBottom: Math.round(s.bottom), stepTop: Math.round(t.top), stepBottom: Math.round(t.bottom), vh: innerHeight };
 				},
