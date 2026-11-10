@@ -133,9 +133,8 @@ try {
 	await shot('#earnings', '08-empty-range');
 	await page.click('[data-testid="reset"]');
 
-	await shot('#meaning', '09-what-it-means');
-	await shot('#explore', '10-explore-placeholders');
-	await shot('#methods', '11-methods');
+	await shot('#takeaway', '09-takeaway');
+	await shot('#appendix', '11-appendix');
 
 	// Narrow screen
 	await page.setViewport({ width: 375, height: 812, deviceScaleFactor: 2 });

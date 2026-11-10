@@ -287,10 +287,20 @@
 	});
 
 	// Narrative helpers (every number comes from findings.json)
-	const topMajors = $derived(f ? f.top20_majors.values : []);
 	const gapRows = $derived(f ? [...f.tuition_quartile_gap_within_major.values].sort((a, b) => a.gap - b.gap) : []);
 	const tuitionMed = (label) => f.tuition_by_control.values[label];
 	const short = (t) => t.split(',')[0];
+
+	// Closing call to action: return to the end of the tuition story (all groups shown) and focus the search.
+	function lookUpCollege(event) {
+		const step = document.querySelector('#cost [data-step="3"]');
+		const input = document.getElementById('school-search');
+		if (!step || !input) return;
+		event.preventDefault();
+		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		step.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+		input.focus({ preventScroll: true });
+	}
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
@@ -649,75 +659,60 @@
 			{/if}
 		</section>
 
-		<!-- 4. MEANING -->
-		<section class="wrap" id="meaning">
-			<p class="step ui">3 · What does this mean?</p>
-			<h2>What you study is associated with bigger earnings gaps than what you pay, but price still shows up</h2>
-			<div class="insights">
-				<article>
-					<h3>Popular does not mean high-paying</h3>
-					<p>
-						{short(f.popularity_vs_earnings.most_popular)} is the most common major
-						({fmtPct(f.popularity_vs_earnings.most_popular_share)} of degrees), yet its median program
-						({fmtUSD(f.popularity_vs_earnings.most_popular_p50)}) ranks
-						{f.popularity_vs_earnings.most_popular_rank_by_p50_in_top20}th of the 20 most-awarded majors. Across the
-						{f.popularity_vs_earnings.majors} majors with at least 30 reporting programs, the rank correlation between
-						degrees awarded and median program earnings is ρ = {f.popularity_vs_earnings.spearman.toFixed(2)}: essentially
-						no relationship.
+		<!-- 4. TAKEAWAY: answers the hook's question with the data, then hands the reader the tools -->
+		<section class="wrap" id="takeaway">
+			<p class="step ui">3 · So does the college you go to matter?</p>
+			<h2>Less than what you study</h2>
+			<p class="prose">For a typical graduate, a different major changes early pay far more than a pricier college does.</p>
+
+			<figure class="gaps ui" data-testid="takeaway-gaps">
+				<figcaption>Gap in the median program’s earnings one year after graduating</figcaption>
+				<div class="gap-row">
+					<p class="gap-label"><strong>Switch majors</strong>{short(f.between_vs_within.lowest_major)} → {short(f.between_vs_within.highest_major)}</p>
+					<div class="gap-track" aria-hidden="true"><span class="gap-bar" style:width="100%"></span></div>
+					<p class="gap-val">{fmtUSD(f.between_vs_within.between_gap)}</p>
+				</div>
+				<div class="gap-row">
+					<p class="gap-label"><strong>Pay more, same major</strong>Cheapest → priciest quarter of colleges</p>
+					<div class="gap-track" aria-hidden="true">
+						<span class="gap-range" style:width="{(gapRows.at(-1).gap / f.between_vs_within.between_gap) * 100}%"></span>
+						<span class="gap-bar" style:width="{(f.tuition_quartile_gap_within_major.median_gap / f.between_vs_within.between_gap) * 100}%"></span>
+					</div>
+					<p class="gap-val">
+						{fmtUSD(f.tuition_quartile_gap_within_major.median_gap)}<span>typical, up to {fmtUSD(gapRows.at(-1).gap)}</span>
 					</p>
-				</article>
-				<article>
-					<h3>The gaps between majors are large</h3>
-					<p>
-						Among the 20 most-awarded majors, the median program ranges from
-						{fmtUSD(f.between_vs_within.lowest_p50)} ({short(f.between_vs_within.lowest_major)}) to
-						{fmtUSD(f.between_vs_within.highest_p50)} ({short(f.between_vs_within.highest_major)}), a gap of
-						{fmtUSD(f.between_vs_within.between_gap)}. Within a single major, the middle half of programs typically spans
-						about {fmtUSD(f.between_vs_within.median_within_iqr)}.
-					</p>
-				</article>
-				<article>
-					<h3>Higher prices are linked to modestly higher earnings within a major</h3>
-					<p>
-						In all {f.tuition_quartile_gap_within_major.majors} of these majors, programs at the highest-tuition quarter of
-						schools (≥ {fmtUSD(f.tuition_quartiles.edges[2])} in-state) reported a higher median than programs at the
-						lowest-tuition quarter (&lt; {fmtUSD(f.tuition_quartiles.edges[0])}). The typical gap was
-						{fmtUSD(f.tuition_quartile_gap_within_major.median_gap)}, from {fmtUSD(gapRows[0].gap)}
-						({short(gapRows[0].title)}) to {fmtUSD(gapRows.at(-1).gap)} ({short(gapRows.at(-1).title)}). Rank correlations
-						between tuition and earnings within a major are positive but modest (median ρ =
-						{f.tuition_vs_earnings_within_major.median_spearman.toFixed(2)}).
-					</p>
-				</article>
-			</div>
-			<div class="message">
-				<p class="kicker ui">Our message, checked against the data</p>
-				<p>
-					<strong>What you study is associated with much larger differences in early earnings than how much your college
-						charges.</strong> A major’s popularity tells you almost nothing about its typical early pay. But our original
-					claim that higher tuition does not indicate higher earnings goes too far. Within the same major, pricier
-					schools report somewhat higher early earnings, with wide overlap between cheap and expensive programs.
-				</p>
-				<p class="small">
-					These are descriptive comparisons, not causal effects. Students who attend expensive schools differ in family
-					income, preparation, location and networks, and the earnings cover only aided graduates who were working one
-					year out.
-				</p>
-			</div>
+				</div>
+			</figure>
+
+			<ul class="takeaways">
+				<li>
+					<strong>Your major moves pay the most.</strong> A typical {short(f.between_vs_within.highest_major)} program
+					reported {(f.between_vs_within.highest_p50 / f.between_vs_within.lowest_p50).toFixed(1)} times what a typical
+					{short(f.between_vs_within.lowest_major)} program did.
+				</li>
+				<li>
+					<strong>Price still shows up, a little.</strong> In all {f.tuition_quartile_gap_within_major.majors} of those
+					majors, the priciest quarter of colleges reported more than the cheapest quarter, but cheap and expensive
+					programs overlap widely.
+				</li>
+				<li>
+					<strong>Popular isn’t the same as well paid.</strong> {short(f.popularity_vs_earnings.most_popular)} is the most
+					common major but ranks {ordinal(f.popularity_vs_earnings.most_popular_rank_by_p50_in_top20)} of 20 on early pay.
+				</li>
+			</ul>
+
+			<p class="callback">
+				Bezos and Huang didn’t need the same kind of college to reach the top. For typical graduates the data point the
+				same way: what you study matters more than what you pay.
+			</p>
+			<p class="small caveat">
+				These are comparisons, not causes. Students at pricier colleges differ in family income, preparation and
+				networks, and the earnings cover aided graduates working one year out (<a href="#appendix-a">Appendix A</a>).
+			</p>
+			<a class="cta ui" href="#cost" onclick={lookUpCollege}>Look up your own college ↑</a>
 		</section>
 
-		<!-- 5. EXPLORE (placeholder) -->
-		<section class="wrap" id="explore">
-			<p class="step ui">4 · Explore further</p>
-			<div class="placeholder ui">Placeholder: content coming soon.</div>
-		</section>
-
-		<!-- 6. TAKEAWAY + METHODS (placeholder) -->
-		<section class="wrap" id="methods">
-			<p class="step ui">5 · Takeaway</p>
-			<div class="placeholder ui">Placeholder: content coming soon.</div>
-		</section>
-
-		<!-- 7. APPENDIX: data notes moved out of the story so the charts stay uncluttered -->
+		<!-- 5. APPENDIX: data notes moved out of the story so the charts stay uncluttered -->
 		<section class="wrap appendix" id="appendix">
 			<p class="step ui">Appendix</p>
 			<h2>Data notes and sources</h2>
@@ -1375,33 +1370,125 @@
 		}
 	}
 
-	.insights {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-		gap: 24px;
-		margin: 24px 0 32px;
-	}
-	.insights article {
-		padding-top: 12px;
-		border-top: 2px solid var(--ink);
-	}
-	.insights h3 {
-		font-size: 19px;
-		margin: 0 0 8px;
-	}
-	.insights p {
-		font-size: 16px;
-		margin: 0;
-	}
-	.message {
-		max-width: var(--measure);
-		padding: 20px 24px;
+	/* ---- Takeaway: two gaps on one dollar scale, three one-line findings, then back to the tools ---- */
+	.gaps {
+		max-width: 760px;
+		margin: 28px 0 32px;
+		padding: 18px 20px 20px;
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: 12px;
 	}
-	.message .kicker {
-		margin-bottom: 8px;
+	.gaps figcaption {
+		margin: 0 0 14px;
+		font-size: 13px;
+		color: var(--ink-2);
+	}
+	.gap-row {
+		display: grid;
+		/* Fixed label and value columns so both tracks are the same width, i.e. one shared dollar scale. */
+		grid-template-columns: 200px minmax(0, 1fr) 140px;
+		align-items: center;
+		gap: 6px 16px;
+	}
+	.gap-row + .gap-row {
+		margin-top: 16px;
+	}
+	.gap-row p {
+		margin: 0;
+	}
+	.gap-label {
+		font-size: 13px;
+		line-height: 1.35;
+		color: var(--ink-2);
+	}
+	.gap-label strong {
+		display: block;
+		font-size: 15px;
+		color: var(--ink);
+	}
+	.gap-track {
+		position: relative;
+		height: 18px;
+		border-radius: 4px;
+		background: var(--wash);
+	}
+	.gap-bar,
+	.gap-range {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		border-radius: 4px;
+		background: var(--ink);
+	}
+	/* The lighter extension runs to the largest within-major price gap; the solid bar is the typical one. */
+	.gap-range {
+		background: var(--band-national);
+	}
+	.gap-val {
+		font-size: 20px;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.15;
+	}
+	.gap-val span {
+		display: block;
+		font-size: 12px;
+		font-weight: 400;
+		color: var(--ink-2);
+	}
+	@media (max-width: 600px) {
+		.gaps {
+			padding: 14px;
+		}
+		.gap-row {
+			grid-template-columns: minmax(0, 1fr) 118px;
+		}
+		.gap-label {
+			grid-column: 1 / -1;
+		}
+	}
+	.takeaways {
+		max-width: var(--measure);
+		margin: 0 0 28px;
+		padding: 0;
+		list-style: none;
+	}
+	.takeaways li {
+		padding: 12px 0;
+		border-top: 1px solid var(--grid);
+		font-size: 17px;
+	}
+	.takeaways li:last-child {
+		border-bottom: 1px solid var(--grid);
+	}
+	.callback {
+		max-width: var(--measure);
+		margin: 0 0 12px;
+		font-size: 21px;
+		line-height: 1.45;
+	}
+	.caveat {
+		max-width: var(--measure);
+		margin: 0 0 24px;
+	}
+	.cta {
+		display: inline-block;
+		padding: 10px 18px;
+		font-size: 15px;
+		font-weight: 600;
+		text-decoration: none;
+		color: var(--page);
+		background: var(--ink);
+		border-radius: 999px;
+	}
+	.cta:hover {
+		opacity: 0.85;
+	}
+	.cta:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 3px;
 	}
 
 	/* ---- Hook: a sticky two-person panel on top, two-column story cards scrolling underneath ---- */
@@ -1581,16 +1668,6 @@
 		padding: 1px 4px;
 		border-radius: 4px;
 		overflow-wrap: anywhere;
-	}
-	.placeholder {
-		min-height: 160px;
-		display: grid;
-		place-items: center;
-		margin-top: 16px;
-		border: 1.5px dashed var(--axis);
-		border-radius: 12px;
-		color: var(--muted);
-		font-size: 14px;
 	}
 	footer {
 		padding: 64px 24px 48px;
