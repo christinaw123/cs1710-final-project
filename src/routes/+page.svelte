@@ -31,6 +31,8 @@
 	let selectedMajor = $state(null);
 	let sortBy = $state('deg');
 	let topN = $state(20);
+	// With a college searched, the earnings chart can list only the majors that college offers.
+	let onlyOffered = $state(true);
 
 	// Scroll-story state: one authoritative step index per section, written only by Scrollama.
 	// It drives *emphasis* (what is dimmed for narration) and never touches the user selections above.
@@ -109,10 +111,37 @@
 	const ranked = $derived(national ? [...national.byCip.values()].sort((a, b) => b.deg - a.deg) : []);
 	const shareMax = $derived(ranked.length ? Math.ceil(ranked[0].share * 1.3 * 100) / 100 : 0.1);
 	const emptyStat = { n: 0, deg: 0, share: 0, earn: [], coverage: null };
+
+	// Majors the searched college offers: any program it lists, even if its earnings are suppressed.
+	const schoolPrograms = $derived(
+		selectedSchool && data ? data.programs.filter((p) => p.unitid === selectedSchool.unitid) : null
+	);
+	const offeredCips = $derived(schoolPrograms ? new Set(schoolPrograms.map((p) => p.cip)) : null);
+	const offeredFilter = $derived(offeredCips && onlyOffered ? offeredCips : null);
+	// Story steps 1 and 2 narrate Business, Nursing and English, so they always show every major.
+	const storyNeedsAll = $derived(earningsStep === 1 || earningsStep === 2);
+	const rowFilter = $derived(storyNeedsAll ? null : offeredFilter);
+
+	// Keep the selected major among the college's majors when the chart is limited to them.
+	function keepMajorOffered() {
+		if (!onlyOffered || !schoolPrograms?.length || offeredCips.has(selectedMajor)) return;
+		const reported = schoolPrograms.filter((p) => p.earn != null);
+		selectedMajor = d3.greatest(reported.length ? reported : schoolPrograms, (p) => p.deg ?? 0).cip;
+	}
+	function chooseSchool(s) {
+		selectedSchool = s;
+		keepMajorOffered();
+	}
+	function setOnlyOffered(v) {
+		onlyOffered = v;
+		keepMajorOffered();
+	}
+
 	const rows = $derived.by(() => {
 		if (!national) return [];
-		const cips = ranked.slice(0, topN).map((d) => d.cip);
-		if (selectedMajor && !cips.includes(selectedMajor)) cips.push(selectedMajor);
+		const pool = rowFilter ? ranked.filter((d) => rowFilter.has(d.cip)) : ranked;
+		const cips = pool.slice(0, topN).map((d) => d.cip);
+		if (selectedMajor && !cips.includes(selectedMajor) && (!rowFilter || rowFilter.has(selectedMajor))) cips.push(selectedMajor);
 		const nat = (c) => national.byCip.get(c);
 		const key =
 			sortBy === 'deg' ? (c) => -nat(c).deg : sortBy === 'high' ? (c) => -(nat(c).p50 ?? -Infinity) : (c) => nat(c).p50 ?? Infinity;
@@ -129,7 +158,7 @@
 	const majorOptions = $derived(
 		national
 			? [...national.byCip.values()]
-					.filter((d) => d.n > 0)
+					.filter((d) => d.n > 0 && (!offeredFilter || offeredFilter.has(d.cip)))
 					.map((d) => ({ cip: d.cip, title: majorByCip.get(d.cip)?.title ?? d.cip }))
 					.sort((a, b) => d3.ascending(a.title, b.title))
 			: []
@@ -154,11 +183,7 @@
 		})
 	);
 
-	const schoolEarn = $derived(
-		selectedSchool && data
-			? new Map(data.programs.filter((p) => p.unitid === selectedSchool.unitid).map((p) => [p.cip, p]))
-			: null
-	);
+	const schoolEarn = $derived(schoolPrograms ? new Map(schoolPrograms.map((p) => [p.cip, p])) : null);
 	const schoolTuition = $derived(selectedSchool ? tuitionOf(selectedSchool, residency) : null);
 
 	// Detail scatter for the selected major
@@ -237,8 +262,9 @@
 	const stepState = (step, i) => (step === null ? '' : step === i ? 'active' : 'inactive');
 
 	// Earnings rows shrink (within limits) so the chart fits its sticky slot on wide screens.
-	// 310px covers the controls, compare bar, legend and axes above and below the rows.
-	const earningsRowHeight = $derived(Math.floor((vh - 310) / Math.max(rows.length, 1)));
+	// 310px covers the controls, compare bar, legend and axes above and below the rows; a searched
+	// college adds one note line.
+	const earningsRowHeight = $derived(Math.floor((vh - 310 - (selectedSchool ? 28 : 0)) / Math.max(rows.length, 1)));
 
 	// When the sticky earnings panel is shorter than the chart (small screens), bring the emphasized
 	// rows into view inside the panel. This scrolls the panel only, never the page.
@@ -359,7 +385,7 @@
 					<div class="sticky" bind:clientHeight={tuitionStickyH}>
 						<div class="controls compact chart-controls ui">
 							<div class="control search-control">
-								<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={(s) => (selectedSchool = s)} />
+								<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={chooseSchool} />
 							</div>
 							<div class="control res-control">
 								<span class="label" id="res-label">Public schools’ price</span>
@@ -514,6 +540,24 @@
 						{#if emphasisLabel}
 							<p class="emphasis-note ui" aria-live="polite">
 								<span class="dim-row"></span>Highlighting {emphasisLabel}. Other majors are dimmed for emphasis, not removed.
+							</p>
+						{/if}
+						{#if selectedSchool}
+							<!-- Searching a college limits the rows to its majors; the toggle sits beside the note it explains. -->
+							<p class="emphasis-note offered-note ui" data-testid="offered-note">
+								<span aria-live="polite">
+									{#if !onlyOffered}
+										Showing all majors, including ones {selectedSchool.name} doesn’t offer.
+									{:else if storyNeedsAll}
+										Showing every major for this step of the story.
+									{:else}
+										Showing {rows.length === offeredCips.size ? 'all' : `${fmtInt(rows.length)} of the`}
+										{fmtInt(offeredCips.size)} majors {selectedSchool.name} offers.
+									{/if}
+								</span>
+								<button class="chip" data-testid="offered-toggle" aria-pressed={onlyOffered} onclick={() => setOnlyOffered(!onlyOffered)}>
+									{onlyOffered ? 'Show all majors' : 'Only this college’s majors'}
+								</button>
 							</p>
 						{/if}
 						<figure class="figure">
@@ -1109,6 +1153,28 @@
 		margin: 0 0 6px;
 		font-size: 12.5px;
 		color: var(--ink-2);
+	}
+	.offered-note {
+		flex-wrap: wrap;
+		gap: 4px 10px;
+		line-height: 1.3;
+	}
+	.chip {
+		padding: 1px 9px;
+		font: inherit;
+		font-weight: 600;
+		color: var(--ink);
+		background: var(--surface);
+		border: 1px solid var(--axis);
+		border-radius: 999px;
+		cursor: pointer;
+	}
+	.chip:hover {
+		border-color: var(--ink-2);
+	}
+	.chip:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 	.dim-row {
 		width: 22px;

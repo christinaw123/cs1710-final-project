@@ -162,6 +162,12 @@
 				.attr('fill', 'var(--muted)')
 				.text((d) => {
 					const n = (hasRange ? d.sel : d.nat)?.n ?? 0;
+					// The searched college offers this major but has no diamond to show: say why.
+					const school = schoolEarn?.get(d.cip);
+					if (school && school.earn == null) {
+						const why = school.note === 'DUP' ? 'yours at other campus' : 'yours suppressed';
+						return truncate(`${fmtInt(n)} program${n === 1 ? '' : 's'} · ${why}`, Math.floor((labelW - 8) / 5.6));
+					}
 					return `${fmtInt(n)} program${n === 1 ? '' : 's'} report earnings`;
 				});
 		}

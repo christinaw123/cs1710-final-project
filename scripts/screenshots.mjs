@@ -87,6 +87,19 @@ try {
 	check('college search marks the school on the histogram', !!marker);
 	await shot('#cost', '06-school-search');
 
+	// With a college searched, the earnings chart lists only that college's majors (toggle back to All)
+	const offeredNote = await page.$eval('[data-testid="offered-note"]', (el) => el.textContent.replace(/\s+/g, ' ').trim());
+	check('earnings chart limits rows to the searched college\'s majors', /majors .* offers/.test(offeredNote), offeredNote);
+	const rowCount = () => page.$$eval('#earnings .chart svg g.row', (els) => els.length);
+	const offeredRows = await rowCount();
+	await page.click('[data-testid="offered-toggle"]');
+	await new Promise((r) => setTimeout(r, 300));
+	const allRows = await rowCount();
+	const allNote = await page.$eval('[data-testid="offered-note"]', (el) => el.textContent);
+	check('"Show all majors" restores the full list', allRows >= 20 && /all majors/.test(allNote), `${offeredRows} → ${allRows} rows`);
+	await page.click('[data-testid="offered-toggle"]');
+	await new Promise((r) => setTimeout(r, 300));
+
 	// Select a major via the dropdown and capture the detail scatter
 	await page.select('#major-select', '1107');
 	await new Promise((r) => setTimeout(r, 300));
