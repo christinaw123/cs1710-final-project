@@ -267,10 +267,9 @@
 		<span class="key"><span class="school-key"></span>Your school</span>
 	{/if}
 </div>
-{#if emphasis || range}
+{#if range}
 	<p class="status ui" aria-live="polite">
-		{#if emphasis}<span><span class="dim-key"></span>Gray bars are dimmed for emphasis; every school is still counted.</span>{/if}
-		{#if range}<span><span class="fade-key"></span>Faded bars fall outside your selected tuition range.</span>{/if}
+		<span><span class="fade-key"></span>Faded bars fall outside your selected tuition range.</span>
 	</p>
 {/if}
 <div class="chart" bind:clientWidth={width} style:min-height="{height}px">
@@ -315,14 +314,10 @@
 		align-items: center;
 		gap: 6px;
 	}
-	.dim-key,
 	.fade-key {
 		width: 12px;
 		height: 12px;
 		border-radius: 3px;
-		background: var(--dim);
-	}
-	.fade-key {
 		background: var(--c-public);
 		opacity: 0.22;
 	}

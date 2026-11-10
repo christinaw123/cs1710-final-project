@@ -42,41 +42,78 @@
 	let earningsStickyH = $state(0);
 	let earningsPanel = $state(null);
 
-	// Opening hook: two electrical engineers, one Ivy League and one state school.
-	// Net worths are Forbes World's Billionaires list values (as of March 18, 2020 and March 1, 2026);
-	// tuition comes from our own College Scorecard data (see Appendix D on the page).
+	// Opening hook: two electrical engineers, one Ivy League and one state school, told in year order.
+	// Net worths: Forbes for Bezos (1998, 2006, 2020, 2026) and Huang (2020, 2026). Huang's 1999 and 2006 values (est)
+	// value his Nvidia shares from SEC filings. Tuition comes from our own data. Sources and photo credits: Appendix D.
 	let hookStep = $state(null);
-	let hookPanelH = $state(0);
 	const HOOK_PEOPLE = [
-		{ key: 'bezos', name: 'Jeff Bezos', short: 'Bezos', school: 'Princeton', type: 'private nonprofit (Ivy League)', unitid: '186131', color: 'var(--c-nonprofit)', inState: false },
-		{ key: 'huang', name: 'Jensen Huang', short: 'Huang', school: 'Oregon State', type: 'public', unitid: '209542', color: 'var(--c-public)', inState: true }
+		{ key: 'bezos', name: 'Jeff Bezos', school: 'Princeton', type: 'private nonprofit (Ivy League)', unitid: '186131', color: 'var(--c-nonprofit)', inState: false },
+		{ key: 'huang', name: 'Jensen Huang', school: 'Oregon State', type: 'public', unitid: '209542', color: 'var(--c-public)', inState: true }
 	];
-	const HOOK_MAX = 224; // largest net worth shown, in $ billions, so both bars share one scale
-	const HOOK_STEPS = [
-		{
-			label: 'College',
-			bezos: { when: '1986', text: 'Graduates from Princeton in electrical engineering and computer science.', cap: 'new graduate' },
-			huang: { when: '1984', text: 'Graduates from Oregon State in electrical engineering.', cap: 'new graduate' }
-		},
-		{
-			label: 'At 30, a start-up',
-			bezos: { when: '1994', text: 'Quits a Wall Street job and starts Amazon in his garage.', cap: 'not yet a billionaire' },
-			huang: {
-				when: '1993',
-				text: 'Co-founds Nvidia with two friends, planning it at a Denny’s. He had finished a Stanford master’s the year before while working full time.',
-				cap: 'not yet a billionaire'
-			}
-		},
-		{
-			label: '2020',
-			bezos: { when: '2020', text: 'The richest person in the world, worth $113 billion.', worth: 113, source: 'Forbes' },
-			huang: { when: '2020', text: 'Worth $4.7 billion, about 1/24 of Bezos’s fortune.', worth: 4.7, source: 'Forbes' }
-		},
-		{
-			label: '2026',
-			bezos: { when: '2026', text: 'No. 4 in the world, worth $224 billion.', worth: 224, source: 'Forbes' },
-			huang: { when: '2026', text: 'No. 8 in the world, worth $154 billion, as Nvidia’s chips power the AI boom.', worth: 154, source: 'Forbes' }
-		}
+	// Photos of places and products belong to their event. Photos of the two men carry `taken` and are attached
+	// only to events in or after that year, so no photo ever appears before the year it was taken.
+	const HOOK_EVENTS = [
+		{ who: 'huang', year: 1984, text: 'Graduates from Oregon State in electrical engineering.',
+			photo: { src: 'oregon-state-memorial-union.jpg', caption: 'Oregon State’s Memorial Union (photographed 2019)' } },
+		{ who: 'bezos', year: 1986, text: 'Graduates from Princeton in electrical engineering and computer science.',
+			photo: { src: 'bezos-1986.jpg', caption: 'Bezos’s Princeton yearbook photo, 1986', taken: 1986, focus: 'center 35%' } },
+		{ who: 'huang', year: 1993, text: 'At 30, co-founds Nvidia, planning it over meals at a Denny’s. He had finished a Stanford master’s the year before while working full time.',
+			photo: { src: 'nvidia-dennys.jpg', caption: 'The San Jose Denny’s where Nvidia was planned (photographed 2023)' } },
+		{ who: 'bezos', year: 1994, text: 'At 30, quits a Wall Street job and starts Amazon in his garage.',
+			photo: { src: 'amazon-garage.jpg', caption: 'Amazon’s first garage, Bellevue, Washington (photographed 2024)' } },
+		{ who: 'bezos', year: 1999, text: 'Two years after Amazon goes public, Time names him its 1999 Person of the Year.', worth: 7.8,
+			photo: { src: 'amazon-hq-1999.jpg', caption: 'Amazon’s Seattle headquarters from 1999 to 2010 (photographed 2012)' } },
+		{ who: 'huang', year: 1999, text: 'Nvidia goes public, and its GeForce 256 is marketed as “the world’s first GPU.”', worth: 0.037, est: true,
+			photo: { src: 'geforce-256.jpg', caption: 'A GeForce 256 chip (photographed 2009)' } },
+		{ who: 'bezos', year: 2006, text: 'Amazon launches Amazon Web Services, renting out its computing power.', worth: 4.3,
+			photo: { src: 'bezos-2005.jpg', caption: 'Bezos in 2005', taken: 2005, focus: 'center 30%' } },
+		{ who: 'huang', year: 2006, text: 'Nvidia launches CUDA, letting its graphics chips run general math, later the engine of AI.', worth: 0.39, est: true,
+			photo: { src: 'geforce-8800.jpg', caption: 'A GeForce 8800, the first card to run CUDA (photographed 2006)' } },
+		{ who: 'bezos', year: 2020, text: 'The world’s richest person.', worth: 113,
+			photo: { src: 'bezos-2019.jpg', caption: 'Bezos in 2019', taken: 2019, focus: 'center 25%' } },
+		{ who: 'huang', year: 2020, text: 'In July, Nvidia passes Intel as America’s most valuable chipmaker.', worth: 4.7,
+			photo: { src: 'huang-2018.jpg', caption: 'Huang in 2018', taken: 2018, focus: 'center 30%' } },
+		{ who: 'bezos', year: 2026, text: 'No. 4 in the world. In 2021 he stepped down as Amazon’s CEO.', worth: 224,
+			photo: { src: 'bezos-2026.jpg', caption: 'Bezos at Blue Origin, May 2026', taken: 2026, focus: 'center 15%' } },
+		{ who: 'huang', year: 2026, text: 'No. 8 in the world. In 2025 Nvidia became the first company worth $5 trillion, on the strength of its AI chips.', worth: 154,
+			photo: { src: 'huang-2026.jpg', caption: 'Huang at Stanford, April 2026', taken: 2026, focus: 'center 25%' } }
+	];
+	const HOOK_YEARS = [...new Set(HOOK_EVENTS.map((e) => e.year))]; // one timeline dot (and scroll step) per year
+	// Each person's bar fills toward his own peak net worth ($ billions), so it shows how far along he is.
+	const HOOK_PEAK = Object.fromEntries(
+		HOOK_PEOPLE.map((p) => [p.key, Math.max(...HOOK_EVENTS.filter((e) => e.who === p.key && e.worth != null).map((e) => e.worth))])
+	);
+	const fmtWorth = (e) => `${e.est ? '≈' : ''}${e.worth >= 1 ? `$${e.worth}B` : `$${Math.round(e.worth * 1000)}M`}`;
+	// The pinned stage shows one year at a time. Each side shows that person's latest milestone up to that year
+	// (hidden when it is from an earlier year) and the latest net worth we can source.
+	const stageYear = $derived(HOOK_YEARS[hookStep ?? 0]);
+	const stage = $derived(
+		Object.fromEntries(
+			HOOK_PEOPLE.map((p) => {
+				const past = HOOK_EVENTS.filter((e) => e.who === p.key && e.year <= stageYear);
+				return [
+					p.key,
+					{
+						event: past.at(-1),
+						worth: past.findLast((e) => e.worth != null)
+					}
+				];
+			})
+		)
+	);
+	const HOOK_CREDITS = [
+		['Memorial Union, Oregon State University (2019)', 'Gary Halvorson, Oregon State Archives', 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/', 'https://commons.wikimedia.org/wiki/File:Memorial_Union,_Oregon_State_University,_Corvallis_-_DPLA_-_8aa8840e3a87aa53902834c13f8db7e0.jpg'],
+		['Pacific Medical Center (Pacific Tower), Seattle (2012)', 'Joe Mabel', 'CC BY-SA 3.0', 'https://creativecommons.org/licenses/by-sa/3.0/', 'https://commons.wikimedia.org/wiki/File:Pacific_Medical_Center_pano_01.jpg'],
+		['Jeffrey P. Bezos, Princeton yearbook (1986), cropped', 'Princeton University', 'Public domain', null, 'https://commons.wikimedia.org/wiki/File:Jeffrey_P._Bezos_1986.jpg'],
+		['Denny’s at 2484 Berryessa Road, San Jose (2023)', 'Coolcaesar', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/', 'https://commons.wikimedia.org/wiki/File:2484_Berryessa_Road.jpg'],
+		['Amazon’s founding site in Bellevue, Washington (2024)', 'SounderBruce', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/', 'https://commons.wikimedia.org/wiki/File:Amazon%27s_founding_site_in_Bellevue,_Washington_-_garage.jpg'],
+		['NVIDIA GeForce 256 GPU (2009)', 'Konstantin Lanzet', 'CC BY-SA 3.0', 'https://creativecommons.org/licenses/by-sa/3.0/', 'https://commons.wikimedia.org/wiki/File:KL_NVIDIA_Geforce_256.jpg'],
+		['Jeff Bezos (2005)', 'James Duncan Davidson', 'Public domain', null, 'https://commons.wikimedia.org/wiki/File:Jeff_Bezos_2005.jpg'],
+		['XFX GeForce 8800 GTS (2006)', 'Tyro (English Wikipedia)', 'Public domain', null, 'https://commons.wikimedia.org/wiki/File:Geforce8800gts.jpg'],
+		['Jeff Bezos at a Blue Origin event (2019)', 'Daniel Oberhaus', 'CC BY 4.0', 'https://creativecommons.org/licenses/by/4.0/', 'https://commons.wikimedia.org/wiki/File:Jeff_Bezos_Unveils_Blue_Origin_Lunar_Lander.jpg'],
+		['Jensen Huang at SC18 (2018)', 'Raysonho @ Open Grid Scheduler / Scalable Grid Engine', 'CC0', 'https://creativecommons.org/publicdomain/zero/1.0/', 'https://commons.wikimedia.org/wiki/File:JensenHuangSC18.jpg'],
+		['Jensen Huang at Stanford (2026)', 'Anderseidesvik', 'CC BY-SA 4.0', 'https://creativecommons.org/licenses/by-sa/4.0/', 'https://commons.wikimedia.org/wiki/File:Jensen_huang_stanford_2026-04-30_003.jpg'],
+		['Jeff Bezos at Blue Origin (May 29, 2026), cropped', 'NASA/John Kraus', 'Public domain', null, 'https://commons.wikimedia.org/wiki/File:Administrator_Isaacman_Visits_Blue_Origin_(NHQ20260529_admin_0005).jpg']
 	];
 
 	onMount(async () => {
@@ -300,39 +337,86 @@
 	{:else}
 		<!-- 1. HOOK: two billionaires, same major, very different colleges -->
 		<section class="wrap" id="hook">
-			<Scrolly bind:step={hookStep} class="hook-scrolly" style="--hook-h: {hookPanelH}px">
-				<div class="hook-graphic">
-					<div class="hook-panel" bind:clientHeight={hookPanelH}>
-						{#each HOOK_PEOPLE as p (p.key)}
-							{@const s = HOOK_STEPS[hookStep ?? 0][p.key]}
+			<Scrolly bind:step={hookStep} class="hook-scroller">
+				<!-- The stage stays pinned for the whole hook; the invisible steps underneath only advance the year. -->
+				<div class="hook-stage" data-testid="hook-stage">
+					<div class="stage-row stage-top">
+						{#each HOOK_PEOPLE as p, side (p.key)}
 							{@const school = schoolById.get(p.unitid)}
-							<div class="person" style="--person-color: {p.color}">
-								<p class="who">{p.name}</p>
+							{@const w = stage[p.key].worth}
+							{@const here = stage[p.key].event?.year === stageYear}
+							{#if side === 1}<div aria-hidden="true"></div>{/if}
+							<div class="stage-person" class:idle={!here} style="--person-color: {p.color}" data-testid="hook-head-{p.key}">
+								<p class="who"><span class="swatch" style:background={p.color}></span>{p.name}</p>
 								<p class="school ui">
-									<span class="swatch" style:background={p.color}></span>{p.school} · {p.type}<br />
-									Tuition & fees {fmtUSD(school?.tuition_in)}/yr{p.inState ? ' in-state' : ''}
+									{p.school}<span class="long">{` · ${p.type}`}</span>{` · ${fmtUSD(school?.tuition_in)}/yr${p.inState ? ' in-state' : ''}`}
 								</p>
-								<p class="worth" data-testid="hook-worth-{p.key}">{s.worth ? `$${s.worth}B` : '—'}</p>
-								<p class="worth-cap ui">{s.when} · {s.worth ? `net worth (${s.source})` : s.cap}</p>
+								<p class="worth" data-testid="hook-worth-{p.key}">{w ? fmtWorth(w) : '—'}</p>
+								<p class="worth-cap ui">
+									{w ? `${w.year} · ${w.est ? 'est. value of his Nvidia shares' : 'net worth (Forbes)'}` : 'no public net worth yet'}
+								</p>
 								<div class="worth-bar" aria-hidden="true">
-									<span style:width="{s.worth ? Math.max(0.6, (s.worth / HOOK_MAX) * 100) : 0}%"></span>
+									<span style:width="{w ? Math.max(1, (w.worth / HOOK_PEAK[p.key]) * 100) : 0}%"></span>
 								</div>
 							</div>
 						{/each}
 					</div>
-				</div>
-				<ol class="hook-steps" aria-label="Two billionaires">
-					{#each HOOK_STEPS as st, i (st.label)}
-						<li class="hook-step {stepState(hookStep, i)}" data-step={i}>
-							<p class="hook-label ui">{st.label}</p>
-							<div class="hook-cols">
-								{#each HOOK_PEOPLE as p (p.key)}
-									<p><strong>{p.short}, {st[p.key].when}.</strong> {st[p.key].text}</p>
-								{/each}
+					<ol class="year-dots ui" aria-hidden="true">
+						{#each HOOK_YEARS as y, i (y)}
+							<li class:reached={i <= (hookStep ?? 0)} class:current={y === stageYear}><span class="dot"></span><span class="yr">{y}</span></li>
+						{/each}
+					</ol>
+					<div class="stage-row stage-cards" aria-live="polite">
+						{#each HOOK_PEOPLE as p, side (p.key)}
+							{@const s = stage[p.key]}
+							{#if side === 1}
+								<ol class="year-line ui" aria-label="Year">
+									{#each HOOK_YEARS as y, i (y)}
+										<li class:reached={i <= (hookStep ?? 0)} class:current={y === stageYear} aria-current={y === stageYear ? 'step' : undefined}>
+											<span class="dot"></span><span class="yr" data-testid={y === stageYear ? 'hook-year' : undefined}>{y}</span>
+										</li>
+									{/each}
+								</ol>
+							{/if}
+							<!-- A card is only shown in its own year; in a year that doesn't involve this person, it fades away. -->
+							<div class="stage-slot">
+								{#if s.event}
+									{#key s.event}
+										<article
+											class="tl-card {side === 0 ? 'left' : 'right'}"
+											class:away={s.event.year !== stageYear}
+											aria-hidden={s.event.year !== stageYear}
+											style="--person-color: {p.color}"
+											data-testid="hook-card-{p.key}"
+											data-year={s.event.year}
+										>
+											{#if s.event.photo}
+												<figure class="tl-photo">
+													<img
+														src="{base}/images/hook/{s.event.photo.src}"
+														alt={s.event.photo.caption}
+														data-taken={s.event.photo.taken ?? ''}
+														style:object-position={s.event.photo.focus ?? 'center'}
+													/>
+													<figcaption class="ui">{s.event.photo.caption}</figcaption>
+												</figure>
+											{/if}
+											<p class="tl-name ui">
+												<span class="swatch" style:background={p.color}></span>{p.name.split(' ')[1]}, {s.event.year}
+											</p>
+											<p class="tl-text">{s.event.text}</p>
+										</article>
+									{/key}
+								{/if}
 							</div>
-						</li>
+						{/each}
+					</div>
+				</div>
+				<div class="stage-steps" aria-hidden="true">
+					{#each HOOK_YEARS as y, i (y)}
+						<div class="stage-step" data-step={i}></div>
 					{/each}
-				</ol>
+				</div>
 			</Scrolly>
 
 			<div class="hook-end">
@@ -771,12 +855,30 @@
 			<article id="appendix-d">
 				<h3>D · The two billionaires</h3>
 				<p class="source ui">
-					Net worths come from Forbes’ annual World’s Billionaires lists, which use stock prices from March 18, 2020 and
-					March 1, 2026. Tuition is the published 2017–18 to
-					2021–22 average from College Scorecard, the same figures as the tuition chart; Oregon State’s is the in-state
-					price. Two people are anecdotes, not evidence. They set up the question that the rest of the page answers with
-					data.
+					<strong>Net worth.</strong> Bezos: Forbes 400 (1999, $7.8 billion, as reported by
+					<a href="https://ca.finance.yahoo.com/news/jeff-bezos-money-timeline-see-170013030.html">Yahoo Finance</a>; we
+					could not open the original list) and Forbes’ World’s Billionaires lists for 2006, 2020 and 2026. Huang:
+					Forbes’ 2020 and 2026 lists. Forbes did not list Huang earlier, so his 1999 and 2006 values
+					(marked ≈) estimate his Nvidia shares from Nvidia’s SEC filings: 3.1 million shares at the $12 IPO price
+					(<a href="https://www.sec.gov/Archives/edgar/data/1045810/0001012870-99-000192.txt">IPO prospectus, January 1999</a>)
+					and 16.9 million shares at $23.13 (<a href="https://www.sec.gov/Archives/edgar/data/1045810/000119312506110604/ddef14a.htm">2006 proxy statement</a>).
+					Each bar fills toward that person’s own 2026 net worth ($224 billion for Bezos, $154 billion for Huang), so it
+					shows how far along he was, not who was richer; the numbers above the bars compare the two.
 				</p>
+				<p class="source ui">
+					<strong>Tuition</strong> is the published 2017–18 to 2021–22 average from College Scorecard, the same figures as
+					the tuition chart; Oregon State’s is the in-state price. Two people are anecdotes, not evidence. They set up the
+					question that the rest of the page answers with data.
+				</p>
+				<p class="source ui"><strong>Photos</strong> (Wikimedia Commons; resized, and some cropped to frame the person):</p>
+				<ul class="credits source ui">
+					{#each HOOK_CREDITS as [what, author, license, licenseUrl, page] (page)}
+						<li>
+							<a href={page}>{what}</a> by {author},
+							{#if licenseUrl}<a href={licenseUrl}>{license}</a>{:else}{license}{/if}
+						</li>
+					{/each}
+				</ul>
 				<p class="back ui"><a href="#hook">↑ Back to the top</a></p>
 			</article>
 		</section>
@@ -1338,124 +1440,237 @@
 		margin-bottom: 8px;
 	}
 
-	/* ---- Hook: a sticky two-person panel on top, two-column story cards scrolling underneath ---- */
+	/* ---- Hook: a pinned stage. The stage never moves; each scroll step advances the story one year. ---- */
 	#hook {
-		padding-top: 32px;
+		padding-top: 24px;
+		--tl-mid: 76px;
 	}
-	.wrap :global(.hook-scrolly) {
+	.wrap :global(.hook-scroller) {
 		display: grid;
-		max-width: 820px;
+		max-width: 980px;
 		margin: 0 auto;
 	}
-	.hook-graphic,
-	.hook-steps {
+	.hook-stage,
+	.stage-steps {
 		grid-area: 1 / 1;
 		min-width: 0;
 	}
-	.hook-graphic {
-		z-index: 2;
-		pointer-events: none;
-	}
-	.hook-panel {
+	.hook-stage {
 		position: sticky;
 		top: 0;
-		pointer-events: auto;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 24px;
-		padding: 16px 0 14px;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 16px;
+		height: 100vh;
+		height: 100svh;
+		padding: 16px 0;
 		background: var(--page);
+	}
+	/* Invisible scroll triggers underneath the stage, one per year */
+	.stage-steps {
+		pointer-events: none;
+	}
+	.stage-step {
+		height: 60vh;
+	}
+	/* Extra room after the last year so 2026 stays pinned before the stage scrolls away */
+	.stage-step:last-child {
+		height: 100vh;
+	}
+	.stage-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) var(--tl-mid) minmax(0, 1fr);
+	}
+	.stage-top {
+		padding-bottom: 14px;
 		border-bottom: 1px solid var(--border);
 	}
-	.person p {
+	.stage-person p {
 		margin: 0;
 	}
-	.person .who {
+	.stage-person .who {
 		font-size: 22px;
 		font-weight: 700;
 	}
-	.person .school {
-		margin: 4px 0 10px;
+	.stage-person .school {
+		margin-top: 2px;
 		font-size: 13px;
-		line-height: 1.4;
 		color: var(--ink-2);
 	}
-	.person .school .swatch {
-		margin-right: 6px;
-	}
-	.person .worth {
+	.stage-person .worth {
+		margin-top: 8px;
 		font-family: var(--sans);
-		font-size: clamp(30px, 5vw, 44px);
+		font-size: clamp(28px, 3.6vw, 40px);
 		font-weight: 700;
 		line-height: 1.1;
 		font-variant-numeric: tabular-nums;
 	}
-	.person .worth-cap {
-		margin: 2px 0 8px;
-		font-size: 12.5px;
+	.stage-person .worth-cap {
+		font-size: 12px;
 		color: var(--ink-2);
 	}
+	.stage-person .swatch,
+	.tl-name .swatch {
+		margin-right: 6px;
+	}
 	.worth-bar {
-		height: 10px;
-		border-radius: 5px;
-		background: var(--wash);
+		height: 8px;
+		margin-top: 6px;
 		overflow: hidden;
+		background: var(--wash);
+		border-radius: 4px;
 	}
 	.worth-bar span {
 		display: block;
 		height: 100%;
-		border-radius: 5px;
 		background: var(--person-color);
+		border-radius: 4px;
 	}
-	.hook-steps {
+	.stage-slot {
+		min-width: 0;
+	}
+	/* In a year that doesn't involve this person, their net-worth panel steps back */
+	.stage-person.idle {
+		opacity: 0.45;
+	}
+	/* Year line between the two cards (wide screens) */
+	.year-line {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		align-items: center;
+		margin: 0;
+		padding: 4px 0;
+		list-style: none;
+	}
+	.year-line::before {
+		content: '';
+		position: absolute;
+		top: 12px;
+		bottom: 12px;
+		left: calc(50% - 1px);
+		width: 2px;
+		background: var(--border);
+	}
+	.year-line li,
+	.year-dots li {
 		position: relative;
 		z-index: 1;
-		list-style: none;
-		margin: 0;
-		padding: calc(var(--hook-h, 0px) + 32px) 0 20vh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		font-size: 11px;
+		color: var(--muted);
 	}
-	.hook-step {
-		padding: 16px 18px;
+	.year-line li {
+		padding: 2px 0;
+		background: var(--page);
+	}
+	.year-line .dot,
+	.year-dots .dot {
+		width: 10px;
+		height: 10px;
+		background: var(--page);
+		border: 2px solid var(--axis);
+		border-radius: 50%;
+	}
+	.year-line li.reached .dot,
+	.year-dots li.reached .dot {
+		background: var(--ink-2);
+		border-color: var(--ink-2);
+	}
+	.year-line li.current,
+	.year-dots li.current {
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--ink);
+	}
+	.year-line li.current .dot,
+	.year-dots li.current .dot {
+		width: 14px;
+		height: 14px;
+		background: var(--ink);
+		border-color: var(--ink);
+		box-shadow:
+			0 0 0 3px var(--page),
+			0 0 0 5px var(--ink-2);
+	}
+	/* Only the current year is labeled; the other dots stay as unlabeled progress marks */
+	.year-line li:not(.current) .yr,
+	.year-dots li:not(.current) .yr {
+		visibility: hidden;
+	}
+	/* Horizontal year dots replace the center line on phones */
+	.year-dots {
+		display: none;
+	}
+	.tl-card {
+		min-width: 0;
+		padding: 14px 16px;
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: 12px;
 	}
-	.hook-step + .hook-step {
-		margin-top: 45vh;
+	/* A card disappears in years that don't involve its person; its space stays so the other side doesn't jump */
+	.tl-card.away {
+		opacity: 0;
+		visibility: hidden;
 	}
-	.hook-step.active {
-		border-color: var(--ink-2);
+	.tl-card p {
+		margin: 0;
 	}
-	.hook-step.inactive {
-		opacity: 0.45;
+	.tl-photo {
+		margin: 0 0 10px;
 	}
-	@media (prefers-reduced-motion: no-preference) {
-		.worth-bar span {
-			transition: width 600ms ease;
-		}
-		.hook-step {
-			transition:
-				opacity 250ms ease,
-				border-color 250ms ease;
-		}
+	.tl-photo img {
+		display: block;
+		width: 100%;
+		aspect-ratio: 3 / 2;
+		max-height: min(210px, 26vh);
+		object-fit: cover;
+		background: var(--wash);
+		border-radius: 8px;
 	}
-	.hook-label {
-		margin: 0 0 8px;
-		font-size: 12px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
+	.tl-photo figcaption {
+		margin-top: 4px;
+		font-size: 11.5px;
+		line-height: 1.3;
 		color: var(--ink-2);
 	}
-	.hook-cols {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 24px;
+	.tl-name {
+		font-size: 12.5px;
+		font-weight: 700;
+		color: var(--ink-2);
 	}
-	.hook-cols p {
-		margin: 0;
+	.tl-card .tl-text {
+		margin-top: 4px;
 		font-size: 17px;
 		line-height: 1.5;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		/* No `to` keyframe, so a card created while away fades in to its own (hidden) opacity */
+		.tl-card {
+			animation: stage-in 350ms ease;
+			transition:
+				opacity 300ms ease,
+				visibility 300ms;
+		}
+		.stage-person {
+			transition: opacity 300ms ease;
+		}
+		.worth-bar span {
+			transition: width 500ms ease;
+		}
+	}
+	@keyframes stage-in {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
 	}
 	.hook-end,
 	.bridge {
@@ -1507,6 +1722,10 @@
 	.back {
 		margin: 10px 0 0;
 		font-size: 13px;
+	}
+	.credits {
+		margin: 4px 0 0;
+		padding-left: 20px;
 	}
 
 	code {
@@ -1581,21 +1800,74 @@
 		.panel-head .control.grow {
 			flex: 1 1 140px;
 		}
-		.hook-panel,
-		.hook-cols {
-			gap: 16px;
+		/* Hook on phones: year dots move into a row under the net-worth panel; everything shrinks to fit one screen */
+		#hook {
+			--tl-mid: 10px;
 		}
-		.person .who {
-			font-size: 18px;
+		.hook-stage {
+			gap: 10px;
+			padding: 10px 0;
 		}
-		.person .school {
-			font-size: 12px;
+		.year-line {
+			visibility: hidden;
 		}
-		.hook-cols p {
-			font-size: 15px;
+		.year-dots {
+			position: relative;
+			display: flex;
+			justify-content: space-between;
+			margin: 0;
+			padding: 0;
+			list-style: none;
 		}
-		.hook-step {
-			padding: 14px;
+		.year-dots::before {
+			content: '';
+			position: absolute;
+			top: 6px;
+			left: 10px;
+			right: 10px;
+			height: 2px;
+			background: var(--border);
+		}
+		.year-dots li {
+			font-size: 9.5px;
+		}
+		.year-dots li.current {
+			font-size: 11px;
+		}
+		.stage-person .who {
+			font-size: 16px;
+		}
+		.stage-person .school {
+			font-size: 11px;
+		}
+		.stage-person .school .long {
+			display: none;
+		}
+		/* Reserve two lines so both net-worth numbers line up even when one tuition line wraps */
+		.stage-person .school,
+		.stage-person .worth-cap {
+			line-height: 1.4;
+			min-height: 2.8em;
+		}
+		.stage-person .worth {
+			margin-top: 4px;
+			font-size: 22px;
+		}
+		.stage-person .worth-cap {
+			font-size: 10.5px;
+		}
+		.tl-card {
+			padding: 9px;
+		}
+		.tl-photo img {
+			max-height: 16svh;
+		}
+		.tl-photo figcaption {
+			font-size: 10px;
+		}
+		.tl-card .tl-text {
+			font-size: 14px;
+			line-height: 1.4;
 		}
 	}
 </style>
