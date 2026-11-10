@@ -316,22 +316,16 @@
 		if (!flow) return null;
 		const story = STORY_FLOW[flowStep] ?? null;
 		const ids = flowStep === 1 || flowStep === 2 ? story : flowPick ? [flowPick] : story;
+		// One color group per highlighted node (the chart colors them --hl-1, --hl-2)
 		if (ids) {
-			const keeps = ids.map(keepNode);
 			return {
-				nodes: new Set(ids),
-				keep: (r) => keeps.some((k) => k(r)),
-				label: ids.map(flowNodeName).join(' and '),
-				shares: ids.length === 1,
+				groups: ids.map((id) => ({ node: id, keep: keepNode(id), label: flowNodeName(id) })),
 				fromPick: ids[0] === flowPick && !(flowStep === 1 || flowStep === 2)
 			};
 		}
 		if (selIds) {
-			return {
-				nodes: new Set(),
-				keep: (r) => selIds.has(r.unitid),
-				label: `colleges in your range, ${fmtUSD(range[0])}–${fmtUSD(range[1])} (${residency === 'out' ? 'out-of-state' : 'in-state'})`
-			};
+			const label = `colleges in your range, ${fmtUSD(range[0])}–${fmtUSD(range[1])} (${residency === 'out' ? 'out-of-state' : 'in-state'})`;
+			return { groups: [{ node: null, keep: (r) => selIds.has(r.unitid), label }] };
 		}
 		return null;
 	});
@@ -575,7 +569,10 @@
 					<div class="sticky" bind:clientHeight={flowStickyH}>
 						<p class="flow-note ui" data-testid="flow-note" aria-live="polite">
 							{#if flowHighlight}
-								<span><span class="key-ink"></span>Highlighting {flowHighlight.label}.</span>
+								<span>
+									Highlighting
+									{#each flowHighlight.groups as g, i (g.label)}{#if i > 0}{' and '}{/if}<span class="key-hl" style:background="var(--hl-{i + 1})"></span>{g.label}{/each}.
+								</span>
 								{#if flowHighlight.fromPick}<button class="chip" onclick={() => (flowPick = null)}>Clear</button>{/if}
 							{:else}
 								<span class="hint">
@@ -1321,15 +1318,13 @@
 		color: var(--ink);
 		font-weight: 600;
 	}
-	.key-ink {
+	.key-hl {
 		display: inline-block;
 		width: 18px;
 		height: 8px;
-		margin-right: 6px;
+		margin: 0 5px 0 2px;
 		border-radius: 2px;
 		vertical-align: middle;
-		background: var(--ink);
-		opacity: 0.62;
 	}
 	.offered-note {
 		flex-wrap: wrap;

@@ -20,6 +20,9 @@
 	--c-nonprofit: #eb6834;
 	--c-forprofit: #1baf7a;
 	--accent: #2a78d6;
+	/* Flow-chart highlights: palette slots 7 (violet) and 5 (magenta), never the school-type hues */
+	--hl-1: #6250d6;
+	--hl-2: #e87ba4;
 	--draft: #9a6b00;
 	--draft-wash: #fbf4e2;
 
@@ -51,6 +54,8 @@
 		--c-nonprofit: #d95926;
 		--c-forprofit: #199e70;
 		--accent: #3987e5;
+		--hl-1: #9085e9;
+		--hl-2: #d55181;
 		--draft: #e0b04a;
 		--draft-wash: #26211a;
 	}
@@ -76,6 +81,8 @@
 	--c-nonprofit: #d95926;
 	--c-forprofit: #199e70;
 	--accent: #3987e5;
+	--hl-1: #9085e9;
+	--hl-2: #d55181;
 	--draft: #e0b04a;
 	--draft-wash: #26211a;
 }

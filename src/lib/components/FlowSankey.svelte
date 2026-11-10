@@ -2,7 +2,8 @@
 	// D3 visualization 3: a Sankey of bachelor's degrees flowing from the price of the college (fifths of
 	// schools by published in-state tuition) to the field studied to the program's early-earnings band.
 	// All flows stay in gray; a highlight (story step, clicked node, or the brushed tuition range) is drawn
-	// on top in ink as the part of each flow that belongs to it.
+	// on top, in color, as the part of each flow that belongs to it. Up to two groups can be highlighted at
+	// once, each in its own color (--hl-1 violet, --hl-2 magenta).
 	import * as d3 from 'd3';
 	import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 	import { onMount, untrack } from 'svelte';
@@ -11,7 +12,7 @@
 
 	let {
 		flow, // flowData(): { rows, brackets, fields, bands }
-		highlight = null, // { keep(row) -> bool, nodes: Set of node ids, shares?: false } or null
+		highlight = null, // { groups: [{ node: id | null, keep(row) -> bool }] } or null; one color per group
 		picked = null, // node id the reader clicked (drawn with a ring)
 		height = 440,
 		onpick // (nodeId) => void
@@ -177,33 +178,50 @@
 	function applyHighlight(hl, picked) {
 		if (!svgEl || !graph) return;
 		const svg = d3.select(svgEl);
-		const sub = hl ? flowLinks(flow.rows, hl.keep) : null;
+		const groups = hl?.groups ?? [];
 		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		const linkH = (d) => Math.max(1, d.width);
-		// The highlighted part of a flow is drawn along the top edge of that flow, at its share of the width.
-		const part = (d) => (sub?.get(d.id) ?? 0) / d.value;
-		const path = (d) => {
-			const w = linkH(d) * part(d);
-			const dy = -linkH(d) / 2 + w / 2;
-			return d3.linkHorizontal()({ source: [d.source.x1, d.y0 + dy], target: [d.target.x0, d.y1 + dy] });
+		// Each group's part of a flow is drawn along the top edge of that flow at its share of the width,
+		// stacked below any earlier group's part, so overlapping groups never cover each other.
+		const segs = [];
+		const used = new Map(); // link id -> share of its width already drawn
+		groups.forEach((g, gi) => {
+			const sub = flowLinks(flow.rows, g.keep);
+			for (const d of graph.links) {
+				const part = (sub.get(d.id) ?? 0) / d.value;
+				if (part <= 0) continue;
+				const before = used.get(d.id) ?? 0;
+				used.set(d.id, before + part);
+				segs.push({ key: `${gi}|${d.id}`, gi, d, part, before });
+			}
+		});
+		const path = (s) => {
+			const h = linkH(s.d);
+			const dy = -h / 2 + h * s.before + (h * s.part) / 2;
+			return d3.linkHorizontal()({ source: [s.d.source.x1, s.d.y0 + dy], target: [s.d.target.x0, s.d.y1 + dy] });
 		};
 
-		svg.select('g.base').classed('muted', !!hl);
+		svg.select('g.base').classed('muted', groups.length > 0);
 		const ink = svg
 			.select('g.ink')
 			.selectAll('path')
-			.data(hl ? graph.links.filter((d) => part(d) > 0) : [], (d) => d.id)
+			.data(segs, (s) => s.key)
 			.join('path')
-			.attr('d', path);
-		(reduce ? ink : ink.transition().duration(300)).attr('stroke-width', (d) => Math.max(0.75, linkH(d) * part(d)));
+			.attr('d', path)
+			.attr('stroke', (s) => `var(--hl-${s.gi + 1})`);
+		(reduce ? ink : ink.transition().duration(300)).attr('stroke-width', (s) => Math.max(0.75, linkH(s.d) * s.part));
 
+		// Highlighted nodes take their group's color, so each color sits next to its own label.
+		const groupOf = (id) => groups.findIndex((g) => g.node === id);
 		svg.selectAll('g.node')
-			.classed('on', (d) => !!hl?.nodes.has(d.id))
-			.classed('picked', (d) => d.id === picked);
+			.classed('on', (d) => groupOf(d.id) >= 0)
+			.classed('picked', (d) => d.id === picked)
+			.select('.bar')
+			.style('fill', (d) => (groupOf(d.id) >= 0 ? `var(--hl-${groupOf(d.id) + 1})` : null));
 
-		// Right-hand labels show where the highlighted degrees end up
-		// (hidden when several groups are highlighted together, since one share would blend them)
-		const shares = hl && hl.shares !== false ? bandShares(flow.rows, hl.keep) : null;
+		// Right-hand labels show where the highlighted degrees end up (only for a single group, since one
+		// share would blend two groups together)
+		const shares = groups.length === 1 ? bandShares(flow.rows, groups[0].keep) : null;
 		svg.selectAll('tspan.share').text((d) =>
 			shares && shares[d.data.key] != null ? `${fmtPct(shares[d.data.key], 0)}${d.data.key === 4 ? ' of degrees' : ''}` : ''
 		);
@@ -258,8 +276,7 @@
 		stroke-opacity: 0.55;
 	}
 	.chart :global(g.ink path) {
-		stroke: var(--ink);
-		stroke-opacity: 0.62;
+		stroke-opacity: 0.88;
 	}
 	.chart :global(g.node) {
 		cursor: pointer;
@@ -267,9 +284,6 @@
 	}
 	.chart :global(g.node .bar) {
 		fill: var(--ink-2);
-	}
-	.chart :global(g.node.on .bar) {
-		fill: var(--ink);
 	}
 	.chart :global(g.node .label) {
 		fill: var(--ink);

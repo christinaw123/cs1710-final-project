@@ -67,6 +67,8 @@ const state = (page) =>
 		on: [...document.querySelectorAll('#flow g.node.on')].map((g) => g.dataset.node).sort(),
 		note: document.querySelector('[data-testid="flow-note"]').textContent.replace(/\s+/g, ' ').trim()
 	}));
+const inkColors = (page) =>
+	page.$$eval('#flow g.ink path', (els) => [...new Set(els.map((e) => e.getAttribute('stroke')))].sort().join());
 const stepText = (page, i) =>
 	page.$eval(`#flow [data-step="${i}"]`, (el) => el.textContent.replace(/\s+/g, ' ').trim());
 
@@ -88,6 +90,8 @@ try {
 	await scrollToStep(page, 1);
 	s = await state(page);
 	check('step 2: cheapest fifth highlighted', s.on.join() === 'b0', s.on.join());
+	const c1 = await inkColors(page);
+	check('step 2: highlighted flows are violet, not black', c1 === 'var(--hl-1)', c1);
 	const t1 = await stepText(page, 1);
 	check('step 2 quotes the cheapest fifth’s top-band share', t1.includes(`${expected.cheapTop} of their graduates`), expected.cheapTop);
 	await page.screenshot({ path: `${out}desktop-step2.png` });
@@ -102,6 +106,11 @@ try {
 	await scrollToStep(page, 3);
 	s = await state(page);
 	check('step 4: engineering and psychology highlighted', s.on.join() === 'f14,f42', s.on.join());
+	const c3 = await inkColors(page);
+	const bars = await page.evaluate(() =>
+		['f14', 'f42'].map((id) => document.querySelector(`#flow g.node[data-node="${id}"] .bar`).style.fill).join()
+	);
+	check('step 4: each field gets its own color, on its flows and its bar', c3 === 'var(--hl-1),var(--hl-2)' && bars === 'var(--hl-1),var(--hl-2)', `${c3} / bars ${bars}`);
 	const t3 = await stepText(page, 3);
 	check('step 4 quotes engineering at the cheapest and priciest fifths', t3.includes(`${expected.engCheap} of engineering`) && t3.includes(`${expected.engPricey} at the priciest`), `${expected.engCheap} / ${expected.engPricey}`);
 	const shares = await page.$$eval('#flow tspan.share', (els) => els.map((e) => e.textContent).join(''));
