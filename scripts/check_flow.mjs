@@ -1,4 +1,4 @@
-// Browser checks for the flow chart (price fifth → field → pay band), plus process-book screenshots.
+// Browser checks for the flow chart (price quarter → field → pay band), plus process-book screenshots.
 // The numbers in the story steps are recomputed here in Node from the same cleaned files and compared
 // with what the page shows.
 // Usage: node scripts/check_flow.mjs [http://localhost:5173]
@@ -29,9 +29,9 @@ const flow = flowData(programs, new Map(schools.map((s) => [s.unitid, s])), new 
 const sh = (keep) => bandShares(flow.rows, keep);
 const expected = {
 	cheapTop: fmtPct(sh((r) => r.b === 0)[3], 0),
-	priceyTop: fmtPct(sh((r) => r.b === 4)[3], 0),
+	priceyTop: fmtPct(sh((r) => r.b === 3)[3], 0),
 	engCheap: fmtPct(sh((r) => r.f === '14' && r.b === 0)[3], 0),
-	engPricey: fmtPct(sh((r) => r.f === '14' && r.b === 4)[3], 0)
+	engPricey: fmtPct(sh((r) => r.f === '14' && r.b === 3)[3], 0)
 };
 const familyOf = new Map(majors.map((m) => [m.cip, m.cip2]));
 
@@ -79,8 +79,47 @@ try {
 		nodes: document.querySelectorAll('#flow g.node').length,
 		links: document.querySelectorAll('#flow g.base path').length
 	}));
-	check('flow chart draws 5 price groups + 9 fields + 5 pay bands', counts.nodes === 19, `${counts.nodes} nodes`);
-	check('flow chart draws every price→field and field→pay link', counts.links === 90, `${counts.links} links`);
+	check('flow chart draws 4 price groups + 9 fields + 5 pay bands', counts.nodes === 18, `${counts.nodes} nodes`);
+	check('flow chart draws every price→field and field→pay link', counts.links === 81, `${counts.links} links`);
+	const order = await page.evaluate(() => {
+		const col = (p) =>
+			[...document.querySelectorAll(`#flow g.node[data-node^="${p}"]`)]
+				.sort((a, b) => a.querySelector('.bar').getBBox().y - b.querySelector('.bar').getBBox().y)
+				.map((g) => g.dataset.node)
+				.join();
+		return { price: col('b'), pay: col('e') };
+	});
+	check(
+		'price runs priciest (top) to cheapest; pay runs highest to lowest, then Not reported',
+		order.price === 'b3,b2,b1,b0' && order.pay === 'e3,e2,e1,e0,e4',
+		`${order.price} / ${order.pay}`
+	);
+	const labels = await page.evaluate(() =>
+		['b3', 'e3'].map((id) =>
+			[...document.querySelectorAll(`#flow g.node[data-node="${id}"] tspan`)].map((t) => t.textContent).filter(Boolean).join(' | ')
+		)
+	);
+	check(
+		'price and pay labels are percentiles with the dollar range as a caption',
+		/^75th–100th \| \$[\d.]+K or more$/.test(labels[0]) && /^75th–100th \| \$[\d.]+K or more$/.test(labels[1]),
+		labels.join(' / ')
+	);
+
+	// Every chart has the same filter bar, listing only the filters that change that chart
+	const shown = await page.evaluate(() =>
+		Object.fromEntries(
+			['cost', 'flow', 'earnings', 'detail'].map((k) => {
+				const bar = document.querySelector(`[data-testid="${k}-filters"]`);
+				const has = (sel, name) => (bar?.querySelector(sel) ? [name] : []);
+				return [k, [...has('input[type="search"]', 'college'), ...has('.controls > .segmented', 'price'), ...has('.range', 'tuition')].join('+')];
+			})
+		)
+	);
+	check(
+		'each chart lists only the filters that change it',
+		shown.cost === 'college+price+tuition' && shown.flow === 'tuition' && shown.earnings === 'college+tuition' && shown.detail === 'college+price+tuition',
+		Object.entries(shown).map(([k, v]) => `${k}: ${v}`).join(', ')
+	);
 
 	await scrollToStep(page, 0);
 	let s = await state(page);
@@ -89,18 +128,18 @@ try {
 
 	await scrollToStep(page, 1);
 	s = await state(page);
-	check('step 2: cheapest fifth highlighted', s.on.join() === 'b0', s.on.join());
+	check('step 2: cheapest price group (0–25th percentile) highlighted', s.on.join() === 'b0', s.on.join());
 	const c1 = await inkColors(page);
 	check('step 2: highlighted flows are violet, not black', c1 === 'var(--hl-1)', c1);
 	const t1 = await stepText(page, 1);
-	check('step 2 quotes the cheapest fifth’s top-band share', t1.includes(`${expected.cheapTop} of their graduates`), expected.cheapTop);
+	check('step 2 quotes the cheapest group’s top-band share', t1.includes(`${expected.cheapTop} of their graduates`), expected.cheapTop);
 	await page.screenshot({ path: `${out}desktop-step2.png` });
 
 	await scrollToStep(page, 2);
 	s = await state(page);
-	check('step 3: priciest fifth highlighted', s.on.join() === 'b4', s.on.join());
+	check('step 3: priciest price group (75th–100th percentile) highlighted', s.on.join() === 'b3', s.on.join());
 	const t2 = await stepText(page, 2);
-	check('step 3 quotes the priciest fifth’s top-band share', t2.includes(`${expected.priceyTop} reached the top band`), expected.priceyTop);
+	check('step 3 quotes the priciest group’s top-band share', t2.includes(`${expected.priceyTop} reached the top band`), expected.priceyTop);
 	await page.screenshot({ path: `${out}desktop-step3.png` });
 
 	await scrollToStep(page, 3);
@@ -112,7 +151,7 @@ try {
 	);
 	check('step 4: each field gets its own color, on its flows and its bar', c3 === 'var(--hl-1),var(--hl-2)' && bars === 'var(--hl-1),var(--hl-2)', `${c3} / bars ${bars}`);
 	const t3 = await stepText(page, 3);
-	check('step 4 quotes engineering at the cheapest and priciest fifths', t3.includes(`${expected.engCheap} of engineering`) && t3.includes(`${expected.engPricey} at the priciest`), `${expected.engCheap} / ${expected.engPricey}`);
+	check('step 4 quotes engineering at the cheapest and priciest groups', t3.includes(`${expected.engCheap} of engineering`) && t3.includes(`${expected.engPricey} at the priciest`), `${expected.engCheap} / ${expected.engPricey}`);
 	const shares = await page.$$eval('#flow tspan.share', (els) => els.map((e) => e.textContent).join(''));
 	check('blended shares are hidden when two fields are highlighted', shares === '');
 	await page.screenshot({ path: `${out}desktop-step4.png` });
@@ -133,20 +172,56 @@ try {
 	check('Clear returns to the story highlight', s.on.join() === 'f14,f42', s.on.join());
 
 	// A tuition range typed above highlights its colleges' degrees (when no story step or click applies)
-	await page.evaluate(() => {
-		const set = (id, v) => {
+	// Type the range into the step-1 filter bar: open its tuition chip, then fill both inputs
+	await page.evaluate(async (lo, hi) => {
+		const frame = () => new Promise((r) => setTimeout(r, 50));
+		document.querySelector('[data-testid="cost-tuition"]')?.click();
+		await frame();
+		for (const [id, v] of [['cost-range-lo', lo], ['cost-range-hi', hi]]) {
 			const el = document.getElementById(id);
 			el.value = v;
 			el.dispatchEvent(new Event('change', { bubbles: true }));
-		};
-		set('range-lo', '40000');
-		set('range-hi', '60000');
-	});
+			await frame();
+		}
+	}, '40000', '60000');
 	await scrollToStep(page, 0);
 	s = await state(page);
 	check('a brushed tuition range highlights its colleges', /your range, \$40,000–\$60,000/.test(s.note), s.note);
 	const inkPaths = await page.$$eval('#flow g.ink path', (els) => els.length);
 	check('the range highlight draws ink flows', inkPaths > 10, `${inkPaths} ink flows`);
+
+	// Comparing colleges: each one gets its own shape in the table, the histogram, the earnings rows and the bars
+	const addCollege = async (q, pick = 0) => {
+		await page.type('#school-search', q);
+		await page.waitForSelector('#school-search-list li');
+		await (await page.$$('#school-search-list li'))[pick].click();
+		await pause(300);
+	};
+	await addCollege('Ohio State University-Main');
+	await addCollege('Harvard University');
+	const cmp = await page.evaluate(() => ({
+		table: document.querySelectorAll('[data-testid="compare-table"] tbody tr').length,
+		histogram: document.querySelectorAll('#cost .school-mark').length,
+		marks: [0, 1].map((m) => document.querySelectorAll(`#earnings path.college-mark[data-mark="${m}"]`).length),
+		chips: document.querySelectorAll('[data-testid="earnings-filters"] .college-chip').length
+	}));
+	check(
+		'two compared colleges show in the table, the histogram, the earnings rows and the filter bars',
+		cmp.table === 2 && cmp.histogram === 2 && cmp.marks.every((n) => n > 0) && cmp.chips === 2,
+		JSON.stringify(cmp)
+	);
+	const rowsBefore = await page.$$eval('#earnings g.row', (els) => els.length);
+	await page.click('[data-testid="shared-toggle"]');
+	await pause(300);
+	const shared = await page.evaluate(() => ({
+		rows: document.querySelectorAll('#earnings g.row').length,
+		note: document.querySelector('[data-testid="offered-note"]').textContent.replace(/\s+/g, ' ').trim()
+	}));
+	check(
+		'"Only majors they share" keeps the majors both colleges offer',
+		shared.rows > 0 && shared.rows <= rowsBefore && /both colleges offer/.test(shared.note),
+		`${rowsBefore} → ${shared.rows} rows · ${shared.note}`
+	);
 	check('desktop: no console or page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 	await page.close();
 

@@ -5,16 +5,19 @@
 	import { onMount, untrack } from 'svelte';
 	import { CONTROLS, fmtInt, fmtUSD, fmtUSDk, tuitionOf } from '$lib/data/summarize.js';
 	import { createTooltip } from './tooltip.js';
+	import CollegeMark from './CollegeMark.svelte';
+	import { collegePath } from './collegeMarks.js';
 
 	let {
 		schools,
 		xMax,
 		residency,
 		range,
-		selectedSchool = null,
+		colleges = [], // chosen colleges (school fields + display name + shape index `mark`), up to three
 		height = 300,
 		emphasis = null, // scroll-story highlight: control keys kept in color; others are grayed, not removed
-		onrange
+		onrange, // committed range: called once when a drag ends, since every chart recomputes from it
+		onbrushing = null // live range while dragging, for a readout that keeps up with the pointer
 	} = $props();
 
 	const BIN = 2500;
@@ -51,7 +54,7 @@
 
 	$effect(() => {
 		if (!width || !svgEl) return;
-		draw(bins[residency], range, selectedSchool, width, height);
+		draw(bins[residency], range, colleges, width, height);
 	});
 
 	// Emphasis only restyles existing bars, so story steps never redraw the chart or move the brush.
@@ -70,7 +73,7 @@
 		return `M${x0},${yBottom}V${yTop + rr}Q${x0},${yTop} ${x0 + rr},${yTop}H${x1 - rr}Q${x1},${yTop} ${x1},${yTop + rr}V${yBottom}Z`;
 	}
 
-	function draw(binData, range, selectedSchool, width, height) {
+	function draw(binData, range, colleges, width, height) {
 		const innerW = width - margin.left - margin.right;
 		const innerH = height - margin.top - margin.bottom;
 		const x = d3.scaleLinear().domain([0, xMax]).range([0, innerW]);
@@ -135,9 +138,10 @@
 			.attr('fill', 'var(--ink-2)')
 			.attr('font-size', 12)
 			.text(
-				residency === 'out'
-					? 'Average published out-of-state tuition & fees per year'
-					: 'Average published in-state tuition & fees per year'
+				// Narrow plots get a short title that fits the axis width
+				innerW < 360
+					? `Tuition & fees, ${residency === 'out' ? 'out-of-state' : 'in-state'}`
+					: `Average published ${residency === 'out' ? 'out-of-state' : 'in-state'} tuition & fees per year`
 			);
 
 		// Stacked bars: Public at the baseline, then private nonprofit, then for-profit.
@@ -169,32 +173,55 @@
 			.attr('opacity', (d) => (inRange(d.bin) ? 1 : 0.22));
 		applyEmphasis(untrack(() => emphasis));
 
-		// Selected school marker
-		const school = selectedSchool;
-		const t = school ? tuitionOf(school, residency) : null;
-		const markData = t != null ? [{ school, t }] : [];
+		// Chosen colleges: a line at each one's tuition with its shape on top. One college also gets a name label
+		// on the chart; with two or three, the legend names them, since labels would pile up when prices are close.
+		const markData = colleges.map((c) => ({ school: c, t: tuitionOf(c, residency) })).filter((d) => d.t != null);
+		// Shapes within a few pixels of each other step down a level so each stays visible
+		const placed = [];
+		for (const d of [...markData].sort((a, b) => a.t - b.t)) {
+			let level = 0;
+			while (placed.some((p) => p.level === level && Math.abs(p.px - x(d.t)) < 12)) level++;
+			placed.push({ px: x(d.t), level });
+			d.top = -6 + level * 13;
+		}
 		const mark = root
 			.selectAll('g.school-mark')
-			.data(markData)
+			.data(markData, (d) => d.school.unitid)
 			.join((enter) => {
 				const g = enter.append('g').attr('class', 'school-mark').attr('pointer-events', 'none');
 				g.append('line');
-				g.append('path');
+				g.append('path').attr('class', 'shape');
 				g.append('text').attr('class', 'name');
 				return g;
 			});
 		mark.attr('transform', (d) => `translate(${x(d.t)},0)`);
-		mark.select('line').attr('y1', -4).attr('y2', innerH).attr('stroke', 'var(--ink)').attr('stroke-width', 1.5);
-		mark.select('path').attr('d', `M0,${innerH}l-6,10h12z`).attr('fill', 'var(--ink)');
+		mark.select('line').attr('y1', (d) => d.top).attr('y2', innerH).attr('stroke', 'var(--ink)').attr('stroke-width', 1.5);
+		mark
+			.select('path.shape')
+			.attr('transform', (d) => `translate(0,${d.top})`)
+			.attr('d', (d) => collegePath(d.school.mark, 70))
+			.attr('fill', 'var(--surface)')
+			.attr('stroke', 'var(--ink)')
+			.attr('stroke-width', 2);
+		// The label goes on whichever side of the marker has more room and is shortened to fit it
+		// (about 6.8px per character at 12px bold), so it never runs past the chart.
+		const roomRight = (d) => innerW + margin.right - x(d.t) - 10;
+		const roomLeft = (d) => x(d.t) + margin.left - 10;
+		const toRight = (d) => roomRight(d) >= roomLeft(d);
+		const markLabel = (d) => {
+			const value = ` · ${fmtUSD(d.t)}`;
+			const chars = Math.floor((toRight(d) ? roomRight(d) : roomLeft(d)) / 6.8) - value.length;
+			return `${truncate(d.school.name, Math.max(6, Math.min(40, chars)))}${value}`;
+		};
 		mark
 			.select('text.name')
-			.attr('y', -8)
-			.attr('text-anchor', (d) => (x(d.t) > innerW * 0.6 ? 'end' : 'start'))
-			.attr('dx', (d) => (x(d.t) > innerW * 0.6 ? -4 : 4))
+			.attr('y', (d) => d.top + 4)
+			.attr('text-anchor', (d) => (toRight(d) ? 'start' : 'end'))
+			.attr('dx', (d) => (toRight(d) ? 10 : -10))
 			.attr('font-size', 12)
 			.attr('font-weight', 600)
 			.attr('fill', 'var(--ink)')
-			.text((d) => `${truncate(d.school.name, innerW < 420 ? 24 : 40)} · ${fmtUSD(d.t)}`);
+			.text((d) => (colleges.length === 1 ? markLabel(d) : ''));
 
 		// Brush (re-created when the plot size changes)
 		let brushG = root.select('g.brush');
@@ -209,9 +236,16 @@
 				])
 				.on('brush end', (event) => {
 					if (!event.sourceEvent) return; // ignore programmatic moves
-					if (!event.selection) return onrange(null);
-					const [lo, hi] = event.selection.map((px) => Math.round(x.invert(px) / 100) * 100);
-					onrange([Math.max(0, lo), Math.min(xMax, hi)]);
+					const r = event.selection
+						? event.selection.map((px) => Math.round(x.invert(px) / 100) * 100)
+						: null;
+					const next = r ? [Math.max(0, r[0]), Math.min(xMax, r[1])] : null;
+					// While dragging, only the readout follows; the shared range (and every chart) updates on release.
+					if (event.type === 'brush') onbrushing?.(next);
+					else {
+						onbrushing?.(null);
+						onrange(next);
+					}
 				});
 			brushG = root.append('g').attr('class', 'brush').call(brush);
 			brushG.select('.selection').attr('fill', 'var(--select)').attr('fill-opacity', 0.08).attr('stroke', 'var(--select)');
@@ -263,8 +297,14 @@
 			<span class="swatch" style:background={c.color}></span>{c.label}
 		</span>
 	{/each}
-	{#if selectedSchool}
-		<span class="key"><span class="school-key"></span>Your school</span>
+	{#if colleges.length === 1}
+		<span class="key"><CollegeMark index={colleges[0].mark} />Your school</span>
+	{:else}
+		{#each colleges as c (c.unitid)}
+			<span class="key college-key" title={c.name}>
+				<CollegeMark index={c.mark} /><span class="key-name">{c.name}</span>{` · ${fmtUSD(tuitionOf(c, residency))}`}
+			</span>
+		{/each}
 	{/if}
 </div>
 {#if range}
@@ -331,10 +371,17 @@
 				opacity 250ms ease;
 		}
 	}
-	.school-key {
-		width: 2px;
-		height: 14px;
-		background: var(--ink);
+	/* A compared college in the legend: shape, name (shortened, full name on hover) and its tuition */
+	.college-key {
+		max-width: 100%;
+		white-space: nowrap;
+	}
+	.key-name {
+		display: inline-block;
+		max-width: 220px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		vertical-align: bottom;
 	}
 	.chart {
 		width: 100%;

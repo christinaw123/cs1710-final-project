@@ -140,18 +140,19 @@ export const FIELD_NAMES = {
 	other: ['Other fields', 'Other']
 };
 export const FLOW_FIELDS = 8; // largest families by degrees get their own node; the rest are "Other fields"
-const FIFTH_NAMES = ['Cheapest fifth', '2nd fifth', 'Middle fifth', '4th fifth', 'Priciest fifth'];
+// Price groups and pay bands share the same four percentile buckets; the chart's headings say "percentile".
+const QUARTER_NAMES = ['0–25th', '25th–50th', '50th–75th', '75th–100th'];
 
 /**
  * Builds the flow chart's groups and one row per program with degrees.
- *  - brackets: fifths of schools by published tuition (each school counts once), for the given residency
+ *  - brackets: quarters of schools by published tuition (each school counts once), for the given residency
  *  - fields: the FLOW_FIELDS largest CIP families by degrees, plus "other"
  *  - bands: degree-weighted quartiles of programs' median earnings, plus "not reported" (suppressed)
  * Pure, so scripts can recompute the numbers quoted on the page.
  */
 export function flowData(programs, schoolById, majorByCip, residency) {
 	const prices = [...schoolById.values()].map((s) => tuitionOf(s, residency)).filter((v) => v != null).sort(d3.ascending);
-	const edges = [0.2, 0.4, 0.6, 0.8].map((q) => d3.quantileSorted(prices, q));
+	const edges = [0.25, 0.5, 0.75].map((q) => d3.quantileSorted(prices, q));
 	const bracketOf = (t) => edges.filter((e) => t >= e).length;
 
 	const withDeg = programs.filter((p) => p.deg > 0 && tuitionOf(schoolById.get(p.unitid), residency) != null);
@@ -187,12 +188,12 @@ export function flowData(programs, schoolById, majorByCip, residency) {
 		(s) => bracketOf(tuitionOf(s, residency))
 	);
 	const k = (v) => fmtUSDk(v);
-	const brackets = FIFTH_NAMES.map((name, i) => ({
+	const brackets = QUARTER_NAMES.map((name, i) => ({
 		key: i,
 		name,
-		range: i === 0 ? `under ${k(edges[0])}` : i === 4 ? `${k(edges[3])} or more` : `${k(edges[i - 1])}–${k(edges[i])}`,
+		range: i === 0 ? `under ${k(edges[0])}` : i === 3 ? `${k(edges[2])} or more` : `${k(edges[i - 1])}–${k(edges[i])}`,
 		lo: i === 0 ? null : edges[i - 1],
-		hi: i === 4 ? null : edges[i],
+		hi: i === 3 ? null : edges[i],
 		schools: schoolsPer.get(i) ?? 0
 	}));
 	const fields = [...top, 'other'].map((key) => {
@@ -200,11 +201,12 @@ export function flowData(programs, schoolById, majorByCip, residency) {
 		return { key, name, compact };
 	});
 	const bands = [
-		{ key: 0, name: `Under ${k(cuts[0])}` },
-		{ key: 1, name: `${k(cuts[0])}–${k(cuts[1])}` },
-		{ key: 2, name: `${k(cuts[1])}–${k(cuts[2])}` },
-		{ key: 3, name: `${k(cuts[2])} or more` },
-		{ key: 4, name: 'Not reported' }
+		...QUARTER_NAMES.map((name, i) => ({
+			key: i,
+			name,
+			range: i === 0 ? `under ${k(cuts[0])}` : i === 3 ? `${k(cuts[2])} or more` : `${k(cuts[i - 1])}–${k(cuts[i])}`
+		})),
+		{ key: 4, name: 'Not reported', range: null }
 	];
 	return { rows, brackets, fields, bands, edges, cuts };
 }

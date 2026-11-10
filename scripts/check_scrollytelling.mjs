@@ -190,15 +190,18 @@ try {
 	await walk(page, 'desktop', true);
 
 	// User selections survive scrolling: set range, college, residency and major, then walk the story.
-	await page.evaluate(() => {
-		const set = (id, v) => {
+	// Type the range into the step-1 filter bar: open its tuition chip, then fill both inputs
+	await page.evaluate(async (lo, hi) => {
+		const frame = () => new Promise((r) => setTimeout(r, 50));
+		document.querySelector('[data-testid="cost-tuition"]')?.click();
+		await frame();
+		for (const [id, v] of [['cost-range-lo', lo], ['cost-range-hi', hi]]) {
 			const el = document.getElementById(id);
 			el.value = v;
 			el.dispatchEvent(new Event('change', { bubbles: true }));
-		};
-		set('range-lo', '20000');
-		set('range-hi', '35000');
-	});
+			await frame();
+		}
+	}, '20000', '35000');
 	await page.type('#school-search', 'Ohio State University-Main');
 	await page.waitForSelector('#school-search-list li');
 	await page.click('#school-search-list li');

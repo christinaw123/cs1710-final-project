@@ -1,6 +1,6 @@
 <script>
 	import * as d3 from 'd3';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { base } from '$app/paths';
 	import { loadData } from '$lib/data/load.js';
 	import {
@@ -20,9 +20,11 @@
 	import TuitionHistogram from '$lib/components/TuitionHistogram.svelte';
 	import EarningsByMajor from '$lib/components/EarningsByMajor.svelte';
 	import MajorScatter from '$lib/components/MajorScatter.svelte';
-	import SchoolSearch from '$lib/components/SchoolSearch.svelte';
 	import FlowSankey from '$lib/components/FlowSankey.svelte';
 	import Scrolly from '$lib/components/Scrolly.svelte';
+	import FilterBar from '$lib/components/FilterBar.svelte';
+	import CollegeMark from '$lib/components/CollegeMark.svelte';
+	import { MAX_COLLEGES } from '$lib/components/collegeMarks.js';
 
 	let data = $state(null);
 	let loadError = $state(null);
@@ -30,12 +32,16 @@
 	// Shared view state: the tuition range links the histogram, the earnings chart, and the detail.
 	let residency = $state('in');
 	let range = $state(null);
-	let selectedSchool = $state(null);
+	// Up to three colleges the reader compares. Each keeps the shape (`mark`) it got when added, so removing
+	// one never reshapes the others.
+	let picks = $state([]); // [{ school, mark }]
 	let selectedMajor = $state(null);
 	let sortBy = $state('deg');
 	let topN = $state(20);
-	// With a college searched, the earnings chart can list only the majors that college offers.
+	// With colleges chosen, the earnings chart lists only the majors they offer; with two or more it can narrow
+	// to the majors every one of them offers.
 	let onlyOffered = $state(true);
+	let sharedOnly = $state(false);
 
 	// Scroll-story state: one authoritative step index per section, written only by Scrollama.
 	// It drives *emphasis* (what is dimmed for narration) and never touches the user selections above.
@@ -123,9 +129,15 @@
 
 	onMount(async () => {
 		try {
-			data = await loadData(base);
+			const loaded = await loadData(base);
+			// Files that load but hold no rows (a failed data build) get their own message, not a crash.
+			if (!loaded.schools.length || !loaded.programs.length) {
+				loadError = { empty: true, message: `${fmtInt(loaded.schools.length)} colleges, ${fmtInt(loaded.programs.length)} programs` };
+				return;
+			}
+			data = loaded;
 			const nat = summarizeMajors(data.programs, null);
-			selectedMajor = d3.greatest(nat.byCip.values(), (d) => d.deg).cip;
+			selectedMajor = d3.greatest(nat.byCip.values(), (d) => d.deg)?.cip ?? null;
 		} catch (e) {
 			loadError = e;
 		}
@@ -135,6 +147,13 @@
 	const schoolById = $derived(data ? new Map(data.schools.map((s) => [s.unitid, s])) : new Map());
 	const national = $derived(data ? summarizeMajors(data.programs, null) : null);
 	const selIds = $derived(data && range ? schoolsInRange(data.schools, residency, range) : null);
+	// Live range while the histogram brush is dragged: only the readout follows it (counting schools is cheap);
+	// the shared range, and every chart built on it, updates once when the drag ends.
+	let brushPreview = $state(null);
+	const readoutRange = $derived(brushPreview ?? range);
+	const readoutCount = $derived(
+		brushPreview ? schoolsInRange(data.schools, residency, brushPreview).size : (selIds?.size ?? 0)
+	);
 	const selection = $derived(selIds ? summarizeMajors(data.programs, selIds) : null);
 	const f = $derived(data?.findings);
 
@@ -152,28 +171,45 @@
 	const shareMax = $derived(ranked.length ? Math.ceil(ranked[0].share * 1.3 * 100) / 100 : 0.1);
 	const emptyStat = { n: 0, deg: 0, share: 0, earn: [], coverage: null };
 
-	// Majors the searched college offers: any program it lists, even if its earnings are suppressed.
-	const schoolPrograms = $derived(
-		selectedSchool && data ? data.programs.filter((p) => p.unitid === selectedSchool.unitid) : null
+	// Majors the chosen colleges offer: any program they list, even if its earnings are suppressed.
+	const programsByUnit = $derived(data ? d3.group(data.programs, (p) => p.unitid) : new Map());
+	const collegePrograms = $derived(picks.map((p) => programsByUnit.get(p.school.unitid) ?? []));
+	const cipSets = $derived(collegePrograms.map((ps) => new Set(ps.map((p) => p.cip))));
+	const offeredCips = $derived(cipSets.length ? new Set(cipSets.flatMap((c) => [...c])) : null); // any of them
+	const sharedCips = $derived(
+		cipSets.length > 1 ? new Set([...offeredCips].filter((cip) => cipSets.every((c) => c.has(cip)))) : null
 	);
-	const offeredCips = $derived(schoolPrograms ? new Set(schoolPrograms.map((p) => p.cip)) : null);
-	const offeredFilter = $derived(offeredCips && onlyOffered ? offeredCips : null);
+	const useShared = $derived(sharedOnly && sharedCips?.size > 0);
+	const offeredFilter = $derived(offeredCips && onlyOffered ? (useShared ? sharedCips : offeredCips) : null);
 	// Story steps 1 and 2 narrate Business, Nursing and English, so they always show every major.
 	const storyNeedsAll = $derived(earningsStep === 1 || earningsStep === 2);
 	const rowFilter = $derived(storyNeedsAll ? null : offeredFilter);
 
-	// Keep the selected major among the college's majors when the chart is limited to them.
+	// Keep the selected major among the colleges' majors when the chart is limited to them.
 	function keepMajorOffered() {
-		if (!onlyOffered || !schoolPrograms?.length || offeredCips.has(selectedMajor)) return;
-		const reported = schoolPrograms.filter((p) => p.earn != null);
-		selectedMajor = d3.greatest(reported.length ? reported : schoolPrograms, (p) => p.deg ?? 0).cip;
+		if (!offeredFilter || offeredFilter.has(selectedMajor)) return;
+		const pool = collegePrograms.flat().filter((p) => offeredFilter.has(p.cip));
+		if (!pool.length) return;
+		const reported = pool.filter((p) => p.earn != null);
+		selectedMajor = d3.greatest(reported.length ? reported : pool, (p) => p.deg ?? 0).cip;
 	}
-	function chooseSchool(s) {
-		selectedSchool = s;
+	function addSchool(s) {
+		if (!s || picks.length >= MAX_COLLEGES || picks.some((p) => p.school.unitid === s.unitid)) return;
+		const used = new Set(picks.map((p) => p.mark));
+		picks = [...picks, { school: s, mark: d3.range(MAX_COLLEGES).find((m) => !used.has(m)) }];
+		keepMajorOffered();
+	}
+	function removeSchool(unitid) {
+		picks = picks.filter((p) => p.school.unitid !== unitid);
+		if (picks.length < 2) sharedOnly = false;
 		keepMajorOffered();
 	}
 	function setOnlyOffered(v) {
 		onlyOffered = v;
+		keepMajorOffered();
+	}
+	function setSharedOnly(v) {
+		sharedOnly = v;
 		keepMajorOffered();
 	}
 
@@ -223,8 +259,33 @@
 		})
 	);
 
-	const schoolEarn = $derived(schoolPrograms ? new Map(schoolPrograms.map((p) => [p.cip, p])) : null);
-	const schoolTuition = $derived(selectedSchool ? tuitionOf(selectedSchool, residency) : null);
+	// Twelve names belong to more than one college (three "Bethel University"s, for one). Wherever a chosen
+	// college is named, those get their city and state, so readers can tell which one they picked.
+	const sharedNames = $derived(
+		data ? new Set(d3.rollups(data.schools, (v) => v.length, (s) => s.name).filter(([, n]) => n > 1).map(([name]) => name)) : new Set()
+	);
+	// The chosen colleges as every chart, legend and table shows them: school fields, a display name, the
+	// shape index, and each one's programs by major.
+	const colleges = $derived(
+		picks.map(({ school: s, mark }, i) => ({
+			...s,
+			fullName: s.name,
+			name: sharedNames.has(s.name) ? `${s.name} (${s.city}, ${s.state})` : s.name,
+			mark,
+			earn: new Map((collegePrograms[i] ?? []).map((p) => [p.cip, p]))
+		}))
+	);
+	const offeredNote = $derived.by(() => {
+		if (!colleges.length) return '';
+		const one = colleges.length === 1;
+		if (!onlyOffered) return `Showing all majors, including ones ${one ? `${colleges[0].name} doesn’t` : 'these colleges don’t'} offer.`;
+		if (storyNeedsAll) return 'Showing every major for this step of the story.';
+		const pool = offeredFilter.size;
+		const shown = pool === 1 ? 'the one major' : rows.length === pool ? `all ${fmtInt(pool)} majors` : `${fmtInt(rows.length)} of the ${fmtInt(pool)} majors`;
+		if (one) return `Showing ${shown} ${colleges[0].name} offers.`;
+		const every = colleges.length === 2 ? 'both colleges' : `all ${colleges.length} colleges`;
+		return useShared ? `Showing ${shown} ${every} offer.` : `Showing ${shown} at least one of these colleges offers.`;
+	});
 
 	// Detail scatter for the selected major
 	const detailPoints = $derived(
@@ -242,18 +303,21 @@
 				)
 			: null
 	);
+	// One plain sentence for the trend; the rank correlation behind it is explained in Appendix C.
+	const detailTrend = $derived(
+		detailRho == null
+			? ''
+			: detailRho >= 0.4
+				? 'Pricier colleges tend to report higher pay.'
+				: detailRho >= 0.2
+					? 'Pricier colleges report somewhat higher pay, with wide overlap.'
+					: detailRho > -0.2
+						? 'Price barely lines up with pay here.'
+						: 'Pricier colleges report lower pay here.'
+	);
 	const detailInRange = $derived(
 		range ? detailPoints.filter((p) => selIds.has(p.unitid)) : null
 	);
-
-	// Range inputs (keyboard alternative to brushing)
-	function setRangeFromInputs(lo, hi) {
-		const a = Number(lo);
-		const b = Number(hi);
-		if (lo === '' && hi === '') return (range = null);
-		if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return;
-		range = [Math.max(0, a), Math.min(xMaxTuition, b)];
-	}
 
 	// Story emphasis derived from the step index (null = no emphasis, all groups at full strength).
 	const STORY_CIP = { business: '5202', nursing: '5138', english: '2301' };
@@ -274,7 +338,7 @@
 		const np = sorted(data.schools.filter((s) => s.control === 2));
 		const top20 = ranked.slice(0, 20);
 		const byEarnings = [...top20].sort((a, b) => b.p50 - a.p50);
-		const m = (cip) => national.byCip.get(cip);
+		const m = (cip) => national.byCip.get(cip) ?? { n: 0 }; // a missing major reads as "—", not a crash
 		const nur = m(STORY_CIP.nursing);
 		const eng = m(STORY_CIP.english);
 		return {
@@ -291,20 +355,27 @@
 			npMax: np.at(-1),
 			npOver20: np.filter((v) => v >= 20000).length / np.length,
 			bus: m(STORY_CIP.business),
-			busRank: byEarnings.findIndex((d) => d.cip === STORY_CIP.business) + 1,
+			busRank: byEarnings.findIndex((d) => d.cip === STORY_CIP.business) + 1 || null,
 			nur,
 			eng,
 			gap: nur.p50 - eng.p50,
 			withinIqr: d3.median(top20, (d) => d.p75 - d.p25)
 		};
 	});
-	const ordinal = (n) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
+	// "1 college", "2 colleges": counts that depend on the data or the reader's choices
+	const count = (n, word, plural = `${word}s`) => `${fmtInt(n)} ${n === 1 ? word : plural}`;
+	const ordinal = (n) => n == null ? '—' : `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
 	const stepState = (step, i) => (step === null ? '' : step === i ? 'active' : 'inactive');
 
 	// Earnings rows shrink (within limits) so the chart fits its sticky slot on wide screens.
-	// 310px covers the controls, compare bar, legend and axes above and below the rows; a searched
-	// college adds one note line.
-	const earningsRowHeight = $derived(Math.floor((vh - 310 - (selectedSchool ? 28 : 0)) / Math.max(rows.length, 1)));
+	// 262px covers the chart controls, legend and axes above and below the rows; the filter bar is
+	// measured (it wraps to two lines on narrower screens); a searched college adds one note line.
+	let earningsFilterH = $state(0);
+	let flowFilterH = $state(0);
+	const earningsRowHeight = $derived(
+		Math.floor((vh - 262 - (earningsFilterH + 10) - (colleges.length ? 28 : 0)) / Math.max(rows.length, 1))
+	);
+
 
 	// When the sticky earnings panel is shorter than the chart (small screens), bring the emphasized
 	// rows into view inside the panel. This scrolls the panel only, never the page.
@@ -327,12 +398,13 @@
 	});
 
 	// ---- Flow chart (between the cost and earnings sections) ----
-	// Brackets are fifths of colleges by published in-state tuition, the price most of their graduates paid.
+	// Brackets are quarters of colleges by published in-state tuition, the price most of their graduates paid,
+	// so price and pay share the same four percentile buckets.
 	let flowStep = $state(null);
 	let flowStickyH = $state(0);
-	let flowPick = $state(null); // node id the reader clicked: 'b0'…'b4' price fifth, 'f14' field, 'e3' pay band
+	let flowPick = $state(null); // node id the reader clicked: 'b0'…'b3' price quarter, 'f14' field, 'e3' pay band
 	const flow = $derived(data ? flowData(data.programs, schoolById, majorByCip, 'in') : null);
-	const STORY_FLOW = { 1: ['b0'], 2: ['b4'], 3: ['f14', 'f42'] }; // cheapest fifth, priciest fifth, engineering + psychology
+	const STORY_FLOW = { 1: ['b0'], 2: ['b3'], 3: ['f14', 'f42'] }; // cheapest quarter, priciest quarter, engineering + psychology
 	const keepNode = (id) => {
 		const k = id.slice(1);
 		return id[0] === 'b' ? (r) => r.b === +k : id[0] === 'f' ? (r) => r.f === k : (r) => r.e === +k;
@@ -341,11 +413,11 @@
 		const k = id.slice(1);
 		if (id[0] === 'b') {
 			const b = flow.brackets[+k];
-			return `the ${b.name.toLowerCase()} of colleges (${b.range})`;
+			return `colleges in the ${b.name} percentile by price (${b.range})`;
 		}
 		if (id[0] === 'f') return flow.fields.find((f) => f.key === k)?.name.toLowerCase() ?? k;
-		const band = flow.bands[+k].name;
-		return +k === 4 ? 'degrees whose pay is not reported' : `degrees paying ${band[0].toLowerCase()}${band.slice(1)}`;
+		const band = flow.bands[+k];
+		return +k === 4 ? 'degrees whose pay is not reported' : `degrees in the ${band.name} pay percentile (${band.range})`;
 	};
 	// Steps 1–2 narrate a price group, so they always win; afterwards the reader's click, then the story's
 	// fields, then a tuition range brushed above.
@@ -382,17 +454,20 @@
 		const degIn = (b) => d3.sum(flow.rows, (r) => (r.b === b ? r.deg : 0));
 		const total = d3.sum(flow.rows, (r) => r.deg);
 		const cheap = sh((r) => r.b === 0);
-		const pricey = sh((r) => r.b === 4);
+		const top = flow.brackets.length - 1; // the priciest group
+		const pricey = sh((r) => r.b === top);
 		return {
-			perFifth: Math.round(d3.mean(flow.brackets, (b) => b.schools)),
-			cheapTwoShare: (degIn(0) + degIn(1)) / total,
-			top: flow.bands[3].name,
-			bottom: flow.bands[0].name,
+			perGroup: Math.round(d3.mean(flow.brackets, (b) => b.schools)),
+			cheapHalfShare: (degIn(0) + degIn(1)) / total,
+			cheapest: flow.brackets[0].name,
+			priciest: flow.brackets[top].name,
+			top: flow.bands[3],
+			bottom: flow.bands[0],
 			cheap,
 			pricey,
 			engCheap: sh((r) => r.f === '14' && r.b === 0)[3],
-			engPricey: sh((r) => r.f === '14' && r.b === 4)[3],
-			psyMaxTop: d3.max([0, 1, 2, 3, 4], (b) => sh((r) => r.f === '42' && r.b === b)[3]),
+			engPricey: sh((r) => r.f === '14' && r.b === top)[3],
+			psyMaxTop: d3.max(flow.brackets, (b) => sh((r) => r.f === '42' && r.b === b.key)[3]),
 			psyBottom: sh((r) => r.f === '42')[0]
 		};
 	});
@@ -410,7 +485,10 @@
 		event.preventDefault();
 		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		step.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-		input.focus({ preventScroll: true });
+		// On short phones step 1's filters are folded into a summary line: open them first
+		const summary = input.closest('.filter-bar')?.querySelector('.summary[aria-expanded="false"]');
+		if (!input.offsetParent && summary) summary.click();
+		tick().then(() => input.focus({ preventScroll: true }));
 	}
 </script>
 
@@ -420,26 +498,65 @@
 	<title>Does a more expensive college mean a bigger paycheck?</title>
 </svelte:head>
 
+<!-- The shared filters (college, price, tuition range), one bar above each chart, listing only the filters that
+     change that chart. Every copy writes the same state, so a change anywhere shows up everywhere:
+       cost histogram: college (marker), price (x positions), tuition (brush)
+       flow chart:     tuition only (highlights the range's colleges; price only decides who is in the range)
+       earnings:       college (diamonds, its majors), tuition (comparison; price again only via the range)
+       major detail:   college (marker), price (x positions), tuition (shaded range), plus the major -->
+{#snippet sharedFilters(idPrefix, show, extra = null, collapsible = true, searchId = undefined)}
+	<FilterBar
+		{idPrefix}
+		{show}
+		{searchId}
+		schools={data.schools}
+		{colleges}
+		onschool={addSchool}
+		onremoveschool={removeSchool}
+		{residency}
+		onresidency={(r) => (residency = r)}
+		{range}
+		onrange={(r) => (range = r)}
+		xMax={xMaxTuition}
+		count={selIds?.size ?? null}
+		{collapsible}
+		children={extra}
+	/>
+{/snippet}
+
 <header class="hero">
 	<div class="wrap">
 		<p class="kicker">CS1710 final project</p>
 		<h1>Does a more expensive college mean a bigger paycheck?</h1>
-		<p class="dek">Let us first look at the story of two engineers who ended up becoming billionares. One went to an Ivy League school, the other to a state school.</p>
+		<p class="dek">Let us first look at the story of two engineers. One went to an Ivy League school, the other to a state school. 
+			Both ended up becoming billionaires and the centerpieces of the AI boom.</p>
 	</div>
 </header>
 
 <main>
-	{#if loadError}
+	{#snippet dataError(title, body)}
 		<section class="wrap" id="cost">
 			<div class="state error ui" role="alert">
-				<strong>The cleaned data could not be loaded.</strong>
-				<p>
-					The page expects <code>static/data/schools.csv</code>, <code>programs.csv</code>, <code>majors.csv</code>,
-					<code>findings.json</code> and <code>meta.json</code>. Create them with <code>npm run data:download</code>
-					and <code>npm run data:build</code>, then reload. ({loadError.message})
-				</p>
+				<strong>{title}</strong>
+				<p>{@render body()}</p>
 			</div>
 		</section>
+	{/snippet}
+	<!-- Any error while drawing the page shows a message instead of leaving it on "Loading…" -->
+	<svelte:boundary>
+	{#if loadError?.empty}
+		{#snippet emptyBody()}
+			<code>static/data/schools.csv</code> and <code>programs.csv</code> loaded but hold no rows ({loadError.message}).
+			Re-run <code>npm run data:build</code>, then reload.
+		{/snippet}
+		{@render dataError('The data files are empty.', emptyBody)}
+	{:else if loadError}
+		{#snippet missingBody()}
+			The page expects <code>static/data/schools.csv</code>, <code>programs.csv</code>, <code>majors.csv</code>,
+			<code>findings.json</code> and <code>meta.json</code>. Create them with <code>npm run data:download</code>
+			and <code>npm run data:build</code>, then reload. ({loadError.message})
+		{/snippet}
+		{@render dataError('The cleaned data could not be loaded.', missingBody)}
 	{:else if !data}
 		<section class="wrap" id="cost">
 			<div class="state ui" aria-live="polite">Loading College Scorecard data…</div>
@@ -530,15 +647,20 @@
 			</Scrolly>
 
 			<div class="hook-end">
-				<p class="hook-sum">Different people. Different companies. Very different colleges. Both are now among the ten richest people on Earth.</p>
+				<p class="hook-sum">Different people. Different journeys. Very different colleges. Both are now among the ten richest people on Earth.</p>
 				<p class="hook-q">So does the college you go to matter?</p>
 			</div>
 
 			<div class="bridge">
 				<p class="prose">
-					Most families treat college as an investment: pay tuition now for a
-					bigger paycheck later. So we followed typical graduates, the bachelor’s graduates of
-					{fmtInt(data.schools.length)} colleges, in two steps.
+					Those are two extraordinary stories, but they're outliers. 
+					Most families treat college as an investment:
+					pay tuition now for a bigger paycheck later.
+				</p>
+				<h2 class="bridge-question">So what about the average student?</h2>
+				<p class="prose">
+					To find out, we looked at bachelor’s graduates across
+					<strong>{count(data.schools.length, 'college')}</strong>
 				</p>
 			</div>
 		</section>
@@ -551,53 +673,35 @@
 			<Scrolly bind:step={tuitionStep} class="scrolly" style="--sticky-h: {tuitionStickyH}px">
 				<div class="graphic">
 					<div class="sticky" bind:clientHeight={tuitionStickyH}>
-						<div class="controls compact chart-controls ui">
-							<div class="control search-control">
-								<SchoolSearch schools={data.schools} selected={selectedSchool} onselect={chooseSchool} />
-							</div>
-							<div class="control res-control">
-								<span class="label" id="res-label">Public schools’ price</span>
-								<div class="segmented" role="group" aria-labelledby="res-label">
-									<button aria-pressed={residency === 'in'} onclick={() => (residency = 'in')}>In-state</button>
-									<button aria-pressed={residency === 'out'} onclick={() => (residency = 'out')}>Out-of-state</button>
-								</div>
-							</div>
-						</div>
+						{@render sharedFilters('cost', ['college', 'price', 'tuition'], null, vh < 760, 'school-search')}
 						<figure class="figure">
 							<TuitionHistogram
 								schools={data.schools}
 								xMax={xMaxTuition}
-								height={vw < 600 ? 240 : 300}
+								height={vw < 900 && vh < 760 ? 170 : vw < 600 ? 240 : 300}
 								{residency}
 								{range}
-								{selectedSchool}
+								{colleges}
 								emphasis={tuitionEmphasis}
 								onrange={(r) => (range = r)}
+								onbrushing={(r) => (brushPreview = r)}
 							/>
 							<div class="sel-line ui">
 								<p data-testid="range-readout" aria-live="polite">
-									{#if range}
-										<strong>Selected: {fmtUSD(range[0])} – {fmtUSD(range[1])}</strong> · {fmtInt(selIds.size)}
-										{selIds.size === 1 ? 'school' : 'schools'}
+									{#if readoutRange}
+										<strong>Selected: {fmtUSD(readoutRange[0])} – {fmtUSD(readoutRange[1])}</strong> · {count(readoutCount, 'school')}
 									{:else}
-										<strong>No range selected.</strong>
-										<span class="hint-long">Drag across the chart, or type a range:</span><span class="hint-short">Drag on the chart or type:</span>
+										<strong>No range selected.</strong> Drag across the chart to pick one.
 									{/if}
 								</p>
-								<div class="range-inputs">
-									<label>From $<input id="range-lo" type="number" min="0" step="500" value={range ? range[0] : ''}
-											onchange={(e) => setRangeFromInputs(e.currentTarget.value, range ? range[1] : xMaxTuition)} /></label>
-									<label>to $<input id="range-hi" type="number" min="0" step="500" value={range ? range[1] : ''}
-											onchange={(e) => setRangeFromInputs(range ? range[0] : 0, e.currentTarget.value)} /></label>
-									<button class="btn" data-testid="reset" onclick={() => (range = null)} disabled={!range}>Reset</button>
-								</div>
+								{#if range}<button class="btn" data-testid="reset" onclick={() => (range = null)}>Reset</button>{/if}
 							</div>
 						</figure>
 					</div>
 				</div>
 				<ol class="steps" aria-label="Tuition story">
 					<li class="story-step {stepState(tuitionStep, 0)}" data-step="0">
-						<strong>Prices vary widely.</strong> Across these {fmtInt(data.schools.length)} colleges, average published
+						<strong>Prices vary widely.</strong> Across these {count(data.schools.length, 'college')}, average published
 						in-state tuition and fees ran from {fmtUSD(story.tMin)} to {fmtUSD(story.tMax)} a year. The middle 90% of
 						schools charged between {fmtUSD(story.t05)} and {fmtUSD(story.t95)}. Each bar counts schools in a $2,500
 						band.
@@ -615,31 +719,53 @@
 						$20,000 or more, but their prices ran from {fmtUSD(story.npMin)} to {fmtUSD(story.npMax)}.
 					</li>
 					<li class="story-step {stepState(tuitionStep, 3)}" data-step="3">
-						<strong>Now find your place.</strong> All three groups are back. Search for a college, switch public schools
-						to out-of-state prices, or drag across the chart to choose a tuition range. Your range carries into the
-						earnings comparison below.
+						<strong>Now find your place.</strong> All three groups are back. Search for a college (or up to three to compare), switch public schools
+						to out-of-state prices, or drag across the chart to choose a tuition range. Your choices carry into the
+						charts below, where you can change them too.
 					</li>
 				</ol>
 			</Scrolly>
 
-			<p class="notes-link ui">How to read this chart, sources and a summary table by school type: <a href="#appendix-b">Appendix B</a></p>
-
-			{#if selectedSchool}
-				<div class="school-card ui">
-					<p>
-						<strong>{selectedSchool.name}</strong> · {selectedSchool.city}, {selectedSchool.state} ·
-						{CONTROLS.find((c) => c.key === selectedSchool.control).label}
-					</p>
-					<p>
-						Published tuition & fees: {fmtUSD(selectedSchool.tuition_in)} in-state{#if selectedSchool.tuition_out !== selectedSchool.tuition_in},
-							{fmtUSD(selectedSchool.tuition_out)} out-of-state{/if} · average net price {fmtUSD(selectedSchool.net_price)} ·
-						{fmtInt(selectedSchool.deg_bach)} bachelor’s degrees in 2020–22
-						{#if range && schoolTuition != null && (schoolTuition < range[0] || schoolTuition > range[1])}
-							· <em>outside the selected range</em>
-						{/if}
-					</p>
+			{#if colleges.length}
+				<!-- The chosen colleges side by side; each row carries the shape that marks it in every chart -->
+				<div class="compare-scroll">
+					<table class="compare ui" data-testid="compare-table">
+						<caption>{colleges.length === 1 ? 'Your college' : `Comparing ${colleges.length} colleges`}</caption>
+						<thead>
+							<tr>
+								<th scope="col">College</th>
+								<th scope="col">Type</th>
+								<th scope="col">Published tuition & fees</th>
+								<th scope="col">Average net price</th>
+								<th scope="col">Bachelor’s degrees, 2020–22</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each colleges as c (c.unitid)}
+								{@const t = tuitionOf(c, residency)}
+								<tr>
+									<th scope="row">
+										<span class="college-cell">
+											<CollegeMark index={c.mark} />
+											<span><strong>{c.fullName}</strong><span class="where">{c.city}, {c.state}</span></span>
+										</span>
+									</th>
+									<td>{CONTROLS.find((k) => k.key === c.control).label}</td>
+									<td>
+										{fmtUSD(c.tuition_in)} in-state{#if c.tuition_out !== c.tuition_in}<span class="where">{fmtUSD(c.tuition_out)} out-of-state</span>{/if}
+										{#if range && t != null && (t < range[0] || t > range[1])}<span class="where"><em>outside your range</em></span>{/if}
+									</td>
+									<td>{c.net_price != null ? fmtUSD(c.net_price) : 'not reported'}</td>
+									<td>{fmtInt(c.deg_bach)}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
 			{/if}
+
+			<p class="notes-link ui">Notes and sources: <a href="#appendix-b">Appendix B</a></p>
+
 
 		</section>
 
@@ -651,6 +777,9 @@
 			<Scrolly bind:step={flowStep} class="scrolly" style="--sticky-h: {flowStickyH}px">
 				<div class="graphic">
 					<div class="sticky" bind:clientHeight={flowStickyH}>
+						<div class="filter-slot" bind:clientHeight={flowFilterH}>
+							{@render sharedFilters('flow', ['tuition'])}
+						</div>
 						<p class="flow-note ui" data-testid="flow-note" aria-live="polite">
 							{#if flowHighlight}
 								<span>
@@ -670,7 +799,7 @@
 								{flow}
 								highlight={flowHighlight}
 								picked={flowPick}
-								height={vw < 600 ? 330 : Math.max(380, Math.min(480, vh - 230))}
+								height={vw < 900 && vh < 760 ? 260 : vw < 600 ? 330 : Math.max(380, Math.min(480, vh - 230 - flowFilterH))}
 								onpick={pickFlow}
 							/>
 						</figure>
@@ -680,17 +809,17 @@
 					<li class="story-step {stepState(flowStep, 0)}" data-step="0">
 						<strong>Follow the degrees.</strong> Each band is bachelor’s degrees, flowing from the college’s price, to
 						the field studied, to what that program’s graduates typically earned a year later. Each price group has about
-						{fmtInt(flowStory.perFifth)} colleges, but the cheapest two award {fmtPct(flowStory.cheapTwoShare, 0)} of the
-						degrees.
+						{count(flowStory.perGroup, 'college')}, but the cheaper half, below the median price, awards
+						{fmtPct(flowStory.cheapHalfShare, 0)} of the degrees.
 					</li>
 					<li class="story-step {stepState(flowStep, 1)}" data-step="1">
-						<strong>The cheapest fifth of colleges.</strong> {fmtPct(flowStory.cheap[3], 0)} of their graduates’ degrees
-						with reported pay landed in the top band ({flowStory.top}), and {fmtPct(flowStory.cheap[0], 0)} in the bottom
-						band.
+						<strong>The cheapest colleges ({flowStory.cheapest} percentile by price).</strong> {fmtPct(flowStory.cheap[3], 0)}
+						of their graduates’ degrees with reported pay landed in the top pay band ({flowStory.top.name} percentile,
+						{flowStory.top.range}), and {fmtPct(flowStory.cheap[0], 0)} in the bottom ({flowStory.bottom.name}).
 					</li>
 					<li class="story-step {stepState(flowStep, 2)}" data-step="2">
-						<strong>The priciest fifth.</strong> {fmtPct(flowStory.pricey[3], 0)} reached the top band, compared with
-						{fmtPct(flowStory.cheap[3], 0)} at the cheapest fifth. Price shows up.
+						<strong>The priciest ({flowStory.priciest} percentile).</strong> {fmtPct(flowStory.pricey[3], 0)} reached the
+						top band, compared with {fmtPct(flowStory.cheap[3], 0)} at the cheapest. Price shows up.
 					</li>
 					<li class="story-step {stepState(flowStep, 3)}" data-step="3">
 						<strong>But the field matters more.</strong> {fmtPct(flowStory.engCheap, 0)} of engineering degrees reached
@@ -701,7 +830,7 @@
 				</ol>
 			</Scrolly>
 
-			<p class="notes-link ui">How the groups and pay bands are defined: <a href="#appendix-e">Appendix E</a></p>
+			<p class="notes-link ui">Notes and sources: <a href="#appendix-e">Appendix E</a></p>
 		</section>
 
 		<!-- 3. EARNINGS -->
@@ -717,6 +846,9 @@
 				<div class="graphic">
 					<div class="sticky scrollable" bind:this={earningsPanel} bind:clientHeight={earningsStickyH}>
 						<div class="controls compact chart-controls panel-head ui">
+							<div class="filter-slot" bind:clientHeight={earningsFilterH}>
+								{@render sharedFilters('earnings', ['college', 'tuition'])}
+							</div>
 							<div class="control">
 								<span class="label" id="sort-label">Order majors by</span>
 								<div class="segmented" role="group" aria-labelledby="sort-label">
@@ -741,52 +873,48 @@
 								</select>
 							</div>
 						</div>
-						<div class="compare-bar ui" class:active={range}>
-							{#if range}
-								Comparing <span class="key-band"></span> <strong>all {fmtInt(data.schools.length)} schools</strong> with
-								<span class="key-sel"></span> <strong>{fmtInt(selIds.size)} schools charging {fmtUSD(range[0])}–{fmtUSD(range[1])}</strong>
-								({residency === 'out' ? 'out-of-state' : 'in-state'} price).
-								<button class="link" onclick={() => (range = null)}>Reset</button>
-							{:else}
-								Showing <strong>all {fmtInt(data.schools.length)} schools</strong>. Select a tuition range above to compare.
-							{/if}
-						</div>
 						{#if range && selIds.size === 0}
 							<p class="state empty ui" role="status">
-								No schools fall in the selected tuition range. Widen the range or reset to compare with all schools.
+								No schools fall in the selected tuition range. Widen the range or clear it to compare with all schools.
 							</p>
 						{/if}
 						<div class="legend ui" aria-hidden="true">
-							<span class="key"><span class="lg-band" class:faded={range}></span>All schools: middle 50% of programs</span>
+							<span class="key"><span class="lg-band" class:faded={range}></span>All {count(data.schools.length, 'school')}: middle 50% of programs</span>
 							<span class="key"><span class="lg-dot" class:faded={range}></span>All schools: median program</span>
 							{#if range}
-								<span class="key"><span class="lg-sel"></span>Selected tuition range: middle 50% and median</span>
+								<span class="key"><span class="lg-sel"></span>Your tuition range: middle 50% and median</span>
 							{/if}
-							{#if selectedSchool}
-								<span class="key"><span class="lg-diamond"></span>{selectedSchool.name}</span>
+							{#each colleges as c (c.unitid)}
+								<span class="key"><CollegeMark index={c.mark} />{c.name}</span>
+							{/each}
+							{#if !range}
+								<span class="key hint-key">Set a tuition range in the filters to compare</span>
 							{/if}
 						</div>
 						{#if emphasisLabel}
 							<p class="emphasis-note ui" aria-live="polite">
-								<span class="dim-row"></span>Highlighting {emphasisLabel}. Other majors are dimmed for emphasis, not removed.
+								<span class="dim-row"></span>Highlighting {emphasisLabel}; other majors are dimmed.
 							</p>
 						{/if}
-						{#if selectedSchool}
-							<!-- Searching a college limits the rows to its majors; the toggle sits beside the note it explains. -->
+						{#if colleges.length}
+							<!-- Choosing colleges limits the rows to their majors; the toggles sit beside the note they explain.
+							     Colleges list different majors, so with two or more the rows can narrow to the ones they share. -->
 							<p class="emphasis-note offered-note ui" data-testid="offered-note">
-								<span aria-live="polite">
-									{#if !onlyOffered}
-										Showing all majors, including ones {selectedSchool.name} doesn’t offer.
-									{:else if storyNeedsAll}
-										Showing every major for this step of the story.
-									{:else}
-										Showing {rows.length === offeredCips.size ? 'all' : `${fmtInt(rows.length)} of the`}
-										{fmtInt(offeredCips.size)} majors {selectedSchool.name} offers.
-									{/if}
-								</span>
+								<span aria-live="polite">{offeredNote}</span>
 								<button class="chip" data-testid="offered-toggle" aria-pressed={onlyOffered} onclick={() => setOnlyOffered(!onlyOffered)}>
-									{onlyOffered ? 'Show all majors' : 'Only this college’s majors'}
+									{onlyOffered ? 'Show all majors' : colleges.length > 1 ? 'Only these colleges’ majors' : 'Only this college’s majors'}
 								</button>
+								{#if colleges.length > 1 && onlyOffered && !storyNeedsAll}
+									<button
+										class="chip"
+										data-testid="shared-toggle"
+										aria-pressed={useShared}
+										disabled={!sharedCips?.size}
+										onclick={() => setSharedOnly(!sharedOnly)}
+									>
+										{!sharedCips?.size ? 'No majors in common' : useShared ? 'Majors any of them offers' : 'Only majors they share'}
+									</button>
+								{/if}
 							</p>
 						{/if}
 						<figure class="figure">
@@ -798,8 +926,7 @@
 								rowHeight={earningsRowHeight}
 								emphasis={earningsEmphasis}
 								{selectedMajor}
-								{schoolEarn}
-								schoolName={selectedSchool?.name}
+								{colleges}
 								onselect={(cip) => (selectedMajor = cip)}
 							/>
 						</figure>
@@ -824,42 +951,51 @@
 					</li>
 					<li class="story-step {stepState(earningsStep, 3)}" data-step="3">
 						<strong>Now compare for yourself.</strong> All majors are back. Click a row, or use the major menu above the
-						chart, to see every college’s program. Select a tuition range above to compare those schools with all
-						schools.
+						chart, to see every college’s program. Pick up to three colleges to compare, or set a tuition range in the
+						filters above the chart to compare those schools with all schools.
 					</li>
 				</ol>
 			</Scrolly>
 
-			<p class="notes-link ui">How to read this chart and where the earnings come from: <a href="#appendix-c">Appendix C</a></p>
+			<p class="notes-link ui">Notes and sources: <a href="#appendix-c">Appendix C</a></p>
 
 			{#if selectedMajor}
 				<div class="detail" id="major-detail">
 					<h3>Inside one major: {majorByCip.get(selectedMajor)?.title}</h3>
-					<p class="prose small">
-						Each dot is one college’s program, placed by the school’s published tuition and the program’s median
-						earnings. {fmtInt(detailPoints.length)} programs report earnings.
-						{#if detailRho != null}
-							The rank correlation between tuition and earnings here is ρ = {detailRho.toFixed(2)}
-							({Math.abs(detailRho) < 0.2 ? 'weak' : Math.abs(detailRho) < 0.4 ? 'modest' : 'moderate'}{detailRho > 0
-								? ', positive'
-								: detailRho < 0
-									? ', negative'
-									: ''}): {detailRho > 0 ? 'pricier schools tend to report somewhat higher earnings, with wide overlap' : 'price does not line up with higher earnings here'}.
-						{/if}
+					<p class="prose small" data-testid="detail-caption">
+						Each dot is one college’s program. {detailTrend}
 						{#if detailInRange}
 							{#if detailInRange.length}
-								In the selected range, {fmtInt(detailInRange.length)} programs report a median program value of
+								Your range: {fmtInt(detailInRange.length)} {detailInRange.length === 1 ? 'program' : 'programs'}, typical pay
 								{fmtUSD(d3.median(detailInRange, (p) => p.earn))}.
 							{:else}
-								No program in this major reports earnings in the selected range.
+								No program in your range reports pay.
 							{/if}
 						{/if}
 					</p>
+					{#snippet majorPicker()}
+						<label class="filter-major">
+							<span>Major</span>
+							<select id="detail-major-select" bind:value={selectedMajor}>
+								{#each majorOptions as m (m.cip)}
+									<option value={m.cip}>{m.title}</option>
+								{/each}
+							</select>
+						</label>
+					{/snippet}
+					{@render sharedFilters('detail', ['college', 'price', 'tuition'], majorPicker, false)}
 					<div class="legend ui" aria-hidden="true">
 						{#each CONTROLS as c (c.key)}
 							<span class="key"><span class="lg-pt" style:background={c.color}></span>{c.label}</span>
 						{/each}
 						{#if range}<span class="key"><span class="lg-wash"></span>Selected tuition range</span>{/if}
+						{#each colleges as c (c.unitid)}
+							{@const prog = c.earn.get(selectedMajor)}
+							<span class="key">
+								<CollegeMark index={c.mark} />{c.name}{#if !prog}<span class="key-why">{' '}· doesn’t offer it</span
+									>{:else if prog.earn == null}<span class="key-why">{' '}· earnings not reported</span>{/if}
+							</span>
+						{/each}
 					</div>
 					{#if detailPoints.length}
 						<MajorScatter
@@ -869,7 +1005,7 @@
 							xMax={xMaxTuition}
 							yDomain={earnDomain}
 							nationalP50={national.byCip.get(selectedMajor)?.p50}
-							{selectedSchool}
+							{colleges}
 						/>
 					{:else}
 						<p class="state empty ui">No program in this major reports earnings (all values are suppressed for privacy).</p>
@@ -923,10 +1059,6 @@
 			<p class="callback">
 				Bezos and Huang didn’t need the same kind of college to reach the top. For typical graduates the data point the
 				same way: what you study matters more than what you pay.
-			</p>
-			<p class="small caveat">
-				These are comparisons, not causes. Students at pricier colleges differ in family income, preparation and
-				networks, and the earnings cover aided graduates working one year out (<a href="#appendix-a">Appendix A</a>).
 			</p>
 			<a class="cta ui" href="#cost" onclick={lookUpCollege}>Look up your own college ↑</a>
 		</section>
@@ -1023,6 +1155,13 @@
 					individual programs as open circles. Share of degrees is weighted by degrees awarded in 2020–21 and 2021–22.
 					Dimmed rows during the story are de-emphasized, never filtered out. Source: College Scorecard.
 				</p>
+				<p class="source ui">
+					Under the earnings chart, the single-major chart places each college’s program by the college’s published
+					tuition and the program’s median earnings. Its one-line summary comes from the Spearman rank correlation ρ
+					between the two across that major’s reporting programs (shown for majors with at least 10): ρ of 0.4 or more
+					reads as “tend to report higher pay,” 0.2 to 0.4 as “somewhat higher pay, with wide overlap,” and between
+					−0.2 and 0.2 as “barely lines up.”{#if detailRho != null}{` For ${majorByCip.get(selectedMajor)?.title}, ρ = ${detailRho.toFixed(2)} across ${fmtInt(detailPoints.length)} programs.`}{/if}
+				</p>
 				<p class="back ui"><a href="#earnings">↑ Back to the earnings chart</a></p>
 			</article>
 
@@ -1059,12 +1198,13 @@
 			<article id="appendix-e">
 				<h3>E · Flow chart</h3>
 				<p class="source ui">
-					Band width is bachelor’s degrees awarded in 2020–21 and 2021–22. Price groups are fifths of the
-					{fmtInt(f.scope.schools)} colleges by published in-state tuition and fees (each college counts once), cut at
-					{flow.edges.map((e) => fmtUSD(e)).join(', ')}; in-state is used because most graduates of public colleges paid
-					it. Fields are the {flow.fields.length - 1} largest 2-digit CIP families by degrees, with every other family under
-					“Other fields.” Pay bands are quarters of programs’ median earnings one year after graduating, weighted by
-					degrees, cut at {flow.cuts.map((c) => fmtUSD(c)).join(', ')}. “Not reported” holds programs whose earnings
+					Band width is bachelor’s degrees awarded in 2020–21 and 2021–22. Price groups are quarters of the
+					{fmtInt(f.scope.schools)} colleges by published in-state tuition and fees (each college counts once), labeled by
+					percentile (0–25th up to 75th–100th, the same buckets as the pay bands) and cut at {flow.edges.map((e) => fmtUSD(e)).join(', ')}; in-state is used
+					because most graduates of public colleges paid it. Fields are the {flow.fields.length - 1} largest 2-digit CIP
+					families by degrees, with every other family under “Other fields.” Pay bands are quarters of programs’ median
+					earnings one year after graduating, weighted by degrees, labeled by percentile (0–25th up to 75th–100th) and
+					cut at {flow.cuts.map((c) => fmtUSD(c)).join(', ')}. “Not reported” holds programs whose earnings
 					are suppressed for privacy. Percentages next to the pay bands are shares of the highlighted degrees with
 					reported pay (for “Not reported,” of all highlighted degrees). Flows show where graduates ended up, not what
 					caused it. Source: College Scorecard.
@@ -1073,6 +1213,14 @@
 			</article>
 		</section>
 	{/if}
+	{#snippet failed(error)}
+		{#snippet failedBody()}
+			Something in the data doesn’t match what the charts expect ({error?.message ?? error}). If the data was just
+			rebuilt, check that <code>npm run data:build</code> finished, then reload.
+		{/snippet}
+		{@render dataError('The charts could not be drawn from this data.', failedBody)}
+	{/snippet}
+	</svelte:boundary>
 </main>
 
 <footer class="wrap ui">
@@ -1210,20 +1358,6 @@
 		color: var(--ink-2);
 		max-width: 760px;
 	}
-	.range-inputs {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px;
-	}
-	.range-inputs input {
-		width: 92px;
-		margin-left: 4px;
-	}
-	/* Chart controls sit at the top of each sticky graphic so they read as belonging to that chart. */
-	.chart-controls .search-control {
-		flex: 1 1 320px;
-	}
 	/* The earnings panel can scroll internally (Top 40, short windows, phones); keep its controls pinned. */
 	.panel-head {
 		position: sticky;
@@ -1235,17 +1369,71 @@
 	.panel-head .control.grow {
 		flex-basis: 200px;
 	}
-	.school-card {
+	/* Chosen colleges side by side, under the tuition chart */
+	.compare-scroll {
+		max-width: 100%;
 		margin-top: 16px;
-		padding: 12px 16px;
-		border: 1px solid var(--border);
-		border-left: 3px solid var(--ink);
-		border-radius: 8px;
+		overflow-x: auto;
 		background: var(--surface);
-		font-size: 14px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
 	}
-	.school-card p {
-		margin: 0;
+	.compare {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 14px;
+		font-variant-numeric: tabular-nums;
+	}
+	.compare caption {
+		padding: 10px 14px 4px;
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-align: left;
+		text-transform: uppercase;
+		color: var(--ink-2);
+	}
+	.compare th,
+	.compare td {
+		padding: 8px 14px;
+		text-align: left;
+		vertical-align: top;
+		border-top: 1px solid var(--grid);
+	}
+	.compare thead th {
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--ink-2);
+		white-space: nowrap;
+	}
+	.compare tbody th {
+		font-weight: 400;
+		min-width: 190px;
+	}
+	.college-cell {
+		display: flex;
+		gap: 8px;
+		align-items: flex-start;
+	}
+	.college-cell :global(.college-mark) {
+		margin-top: 3px;
+	}
+	.compare .where {
+		display: block;
+		font-size: 12.5px;
+		color: var(--ink-2);
+	}
+	@media (max-width: 600px) {
+		.compare {
+			font-size: 13px;
+		}
+		.compare th,
+		.compare td {
+			padding: 7px 10px;
+		}
+		.compare tbody th {
+			min-width: 150px;
+		}
 	}
 
 	.summary {
@@ -1304,16 +1492,42 @@
 		margin-right: 8px;
 	}
 
-	.compare-bar {
-		margin: 0 0 10px;
-		padding: 8px 12px;
-		font-size: 13.5px;
-		background: var(--page);
-		border: 1px solid var(--border);
+	/* ---- Shared filter bar: one copy above each chart after step 1 ---- */
+	.panel-head .filter-slot {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+	.panel-head .filter-slot :global(.filter-bar) {
+		margin: 0;
+	}
+	.detail :global(.filter-bar) {
+		margin: 14px 0 10px;
+	}
+	.filter-major {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		flex: 1 1 240px;
+		min-width: 0;
+	}
+	.filter-major span {
+		font-weight: 600;
+		color: var(--ink);
+	}
+	/* Same look as the filter bar's own controls */
+	.filter-major select {
+		flex: 1;
+		min-width: 0;
+		max-width: 360px;
+		height: 30px;
+		padding: 0 8px;
+		font-size: 13px;
+		border: 1px solid var(--axis);
 		border-radius: 8px;
 	}
-	.compare-bar.active {
-		background: var(--surface);
+	.hint-key,
+	.key-why {
+		color: var(--muted);
 	}
 
 	/* ---- Scrollytelling: sticky graphic beside (wide) or above (narrow) the story steps ---- */
@@ -1381,18 +1595,8 @@
 	.sel-line strong {
 		color: var(--ink);
 	}
-	.sel-line .range-inputs input {
-		width: 84px;
-		padding: 4px 8px;
-	}
 	.sel-line .btn {
 		padding: 4px 10px;
-	}
-	.sel-line .range-inputs label {
-		white-space: nowrap;
-	}
-	.hint-short {
-		display: none;
 	}
 	.emphasis-note {
 		display: flex;
@@ -1526,27 +1730,21 @@
 			margin-top: 45svh;
 		}
 	}
-	.link {
-		border: 0;
-		background: none;
-		text-decoration: underline;
-		cursor: pointer;
-		padding: 0 4px;
+	/* Very short screens (a laptop at 200% zoom, a phone held sideways): a pinned chart would fill the screen
+	   and hide the story, so the charts scroll with the page and each step's text follows its chart. */
+	@media (max-width: 899px) and (max-height: 520px) {
+		.sticky {
+			position: static;
+		}
 	}
-	.key-band,
-	.key-sel {
-		display: inline-block;
-		width: 18px;
-		height: 8px;
-		border-radius: 2px;
-		vertical-align: middle;
-		background: var(--band-national);
+	/* Short phones: slightly smaller story text, so each step fits in the space under its pinned chart */
+	@media (max-width: 899px) and (max-height: 759px) {
+		.story-step {
+			padding: 12px 14px;
+			font-size: 15px;
+			line-height: 1.5;
+		}
 	}
-	.key-sel {
-		height: 4px;
-		background: var(--select);
-	}
-
 	.legend {
 		display: flex;
 		flex-wrap: wrap;
@@ -1744,13 +1942,9 @@
 	}
 	.callback {
 		max-width: var(--measure);
-		margin: 0 0 12px;
+		margin: 0 0 24px;
 		font-size: 21px;
 		line-height: 1.45;
-	}
-	.caveat {
-		max-width: var(--measure);
-		margin: 0 0 24px;
 	}
 	.cta {
 		display: inline-block;
@@ -2023,9 +2217,17 @@
 	}
 	.bridge {
 		margin-top: 64px;
+		padding-top: 32px;
+		border-top: 1px solid var(--border);
 	}
 	.bridge .prose {
 		margin: 0;
+	}
+	.bridge-question {
+		max-width: 28ch;
+		margin: 24px 0;
+		font-size: clamp(28px, 4vw, 38px);
+		line-height: 1.15;
 	}
 	.notes-link {
 		margin: 12px 0 0;
@@ -2074,27 +2276,8 @@
 	/* Phones: the pinned panels share the screen with the story text, so their controls get compact.
 	   Kept last so these rules override the base rules above. */
 	@media (max-width: 600px) {
-		.res-control {
-			flex-direction: row;
-			align-items: center;
-			gap: 8px;
-		}
 		.sel-line {
 			gap: 6px;
-		}
-		.hint-long {
-			display: none;
-		}
-		.hint-short {
-			display: inline;
-		}
-		.sel-line .range-inputs {
-			flex-wrap: nowrap;
-			gap: 6px;
-		}
-		.sel-line .range-inputs input {
-			width: 68px;
-			margin-left: 2px;
 		}
 		/* top/padding offset the pinned panel's own 8px top padding so rows can't peek out above the controls */
 		.panel-head {

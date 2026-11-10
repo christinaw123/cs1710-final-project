@@ -1,6 +1,8 @@
 <script>
-	// D3 visualization 3: a Sankey of bachelor's degrees flowing from the price of the college (fifths of
-	// schools by published in-state tuition) to the field studied to the program's early-earnings band.
+	// D3 visualization 3: a Sankey of bachelor's degrees flowing from the price of the college (quarters of
+	// schools by published in-state tuition, the same four percentile buckets as the pay bands) to the field studied to the program's early-earnings band.
+	// Both outer columns run high to low (priciest and best-paid on top) and are labeled by percentile,
+	// with the dollar range as a caption underneath.
 	// All flows stay in gray; a highlight (story step, clicked node, or the brushed tuition range) is drawn
 	// on top, in color, as the part of each flow that belongs to it. Up to two groups can be highlighted at
 	// once, each in its own color (--hl-1 violet, --hl-2 magenta).
@@ -24,6 +26,8 @@
 	let graph = null; // last laid-out sankey graph, reused by the highlight layer
 
 	const compact = $derived(width < 560);
+	// Under 300px (a 320px phone) the middle labels would run into the pay column: smaller type, tighter margins
+	const tiny = $derived(width < 300);
 	const allLinks = $derived(flowLinks(flow.rows));
 	const totalDeg = $derived(d3.sum(flow.rows, (r) => r.deg));
 
@@ -41,18 +45,31 @@
 	// Highlights only redraw the ink layer and labels, never the layout.
 	$effect(() => applyHighlight(highlight, picked));
 
-	const lowerFirst = (s) => s[0].toLowerCase() + s.slice(1); // keeps "$39.2K" intact
-	const nodeName = (n) =>
-		n.col === 0 ? n.data.name : n.col === 1 ? (compact ? n.data.compact : n.data.name) : n.data.name;
+	// Font sizes: group names, their dollar captions, and the column headings
+	const type = $derived(
+		tiny ? { name: 10, cap: 9, head: 10 } : compact ? { name: 11, cap: 9.5, head: 11 } : { name: 12.5, cap: 10.5, head: 12 }
+	);
+	// Short label on the chart: a percentile range for price groups and pay bands (the headings say "percentile")
+	const nodeName = (n) => (n.col === 1 && compact ? n.data.compact : n.data.name);
+	// Full name for tooltips and screen readers
+	const longName = (n) =>
+		n.col === 0
+			? `${n.data.name} price percentile (${n.data.range})`
+			: n.col === 1
+				? nodeName(n)
+				: n.data.range
+					? `${n.data.name} pay percentile (${n.data.range})`
+					: 'pay not reported';
 
 	function draw(flow, allLinks, width, height, compact) {
-		const labelL = compact ? 82 : 132;
-		const labelR = compact ? 86 : 124;
-		const top = 30;
+		const labelL = tiny ? 70 : compact ? 82 : 132;
+		const labelR = tiny ? 70 : compact ? 86 : 124;
+		const top = compact ? 34 : 36; // room for two-line column headings
+		// Priciest colleges and highest pay at the top. "Not reported" stays at the bottom, off the pay scale.
 		const nodes = [
-			...flow.brackets.map((d) => ({ id: `b${d.key}`, col: 0, data: d })),
+			...[...flow.brackets].reverse().map((d) => ({ id: `b${d.key}`, col: 0, data: d })),
 			...flow.fields.map((d) => ({ id: `f${d.key}`, col: 1, data: d })),
-			...flow.bands.map((d) => ({ id: `e${d.key}`, col: 2, data: d }))
+			...[...flow.bands.slice(0, 4).reverse(), flow.bands[4]].map((d) => ({ id: `e${d.key}`, col: 2, data: d }))
 		];
 		const links = [...allLinks].map(([id, value]) => {
 			const [source, target] = id.split('|');
@@ -62,7 +79,7 @@
 			.nodeId((d) => d.id)
 			.nodeWidth(compact ? 9 : 12)
 			.nodePadding(compact ? 7 : 10)
-			.nodeSort(null) // keep cheapest→priciest, largest field→Other, lowest pay→not reported
+			.nodeSort(null) // keep the order above: priciest→cheapest, largest field→Other, highest pay→not reported
 			.extent([
 				[labelL, top],
 				[width - labelR, height - 4]
@@ -70,7 +87,7 @@
 		// On phones the field labels sit between the middle and right columns, so move the middle column left
 		// to give them room. Links follow automatically: they are drawn from the nodes' x positions.
 		if (compact) {
-			const x0 = Math.round(labelL + 0.25 * (width - labelR - labelL));
+			const x0 = Math.round(labelL + (tiny ? 0.16 : 0.25) * (width - labelR - labelL));
 			for (const n of graph.nodes.filter((n) => n.col === 1)) {
 				const w = n.x1 - n.x0;
 				n.x0 = x0;
@@ -81,23 +98,34 @@
 		const svg = d3.select(svgEl).attr('width', width).attr('height', height);
 		svg.selectAll('*').remove();
 
-		// Column headings
+		// Column headings, with "percentile" as a caption under the price and pay columns
+		const mid = graph.nodes.find((n) => n.col === 1);
 		const heads = [
-			[labelL - 7, 'end', compact ? 'Price (in-state)' : 'College price (in-state)'],
-			[(graph.nodes.find((n) => n.col === 1).x0 + graph.nodes.find((n) => n.col === 1).x1) / 2, 'middle', compact ? 'Field' : 'Field of study'],
-			[width - labelR + 6, 'start', compact ? 'Pay, 1 yr out' : 'Pay 1 year out']
+			{ x: labelL - 7, anchor: 'end', title: tiny ? 'In-state price' : compact ? 'Price (in-state)' : 'College price (in-state)', sub: 'percentile' },
+			{ x: (mid.x0 + mid.x1) / 2, anchor: 'middle', title: compact ? 'Field' : 'Field of study', sub: null },
+			{ x: width - labelR + 6, anchor: 'start', title: compact ? 'Pay, 1 yr out' : 'Pay 1 year out', sub: 'percentile' }
 		];
-		svg.append('g')
+		const head = svg
+			.append('g')
+			.attr('class', 'heads')
 			.selectAll('text')
 			.data(heads)
 			.join('text')
-			.attr('x', (d) => d[0])
+			.attr('text-anchor', (d) => d.anchor);
+		head.append('tspan')
+			.attr('x', (d) => d.x)
 			.attr('y', 12)
-			.attr('text-anchor', (d) => d[1])
-			.attr('font-size', compact ? 11 : 12)
+			.attr('font-size', type.head)
 			.attr('font-weight', 600)
 			.attr('fill', 'var(--ink-2)')
-			.text((d) => d[2]);
+			.text((d) => d.title);
+		head.filter((d) => d.sub)
+			.append('tspan')
+			.attr('x', (d) => d.x)
+			.attr('y', 12 + type.cap * 1.35)
+			.attr('font-size', type.cap)
+			.attr('fill', 'var(--ink-3)')
+			.text((d) => d.sub);
 
 		// Base flows (all degrees) in gray
 		svg.append('g')
@@ -124,7 +152,7 @@
 			.attr('data-node', (d) => d.id)
 			.attr('tabindex', 0)
 			.attr('role', 'button')
-			.attr('aria-label', (d) => `${nodeName(d)}${d.col === 0 ? `, ${d.data.range}` : ''}: ${fmtInt(d.value)} degrees. Highlight its graduates.`)
+			.attr('aria-label', (d) => `${longName(d)}: ${fmtInt(d.value)} degrees. Highlight its graduates.`)
 			.on('click', (_, d) => onpick(d.id))
 			.on('keydown', (event, d) => {
 				if (event.key === 'Enter' || event.key === ' ') {
@@ -159,20 +187,33 @@
 		const label = node
 			.append('text')
 			.attr('class', 'label')
-			.attr('x', (d) => (d.col === 0 ? d.x0 - 7 : d.x1 + 6))
-			.attr('y', (d) => (d.y0 + d.y1) / 2)
 			.attr('text-anchor', (d) => (d.col === 0 ? 'end' : 'start'))
-			.attr('font-size', compact ? 11 : 12.5);
+			.attr('font-size', type.name);
 		label.append('tspan').attr('class', 'name').attr('font-weight', 600).text(nodeName);
-		// Second line: price range (left) or the highlighted share (right, filled by applyHighlight)
-		label.filter((d) => d.col !== 1)
+		// Dollar range under each price group and pay band, in caption type
+		label.filter((d) => d.data.range)
 			.append('tspan')
-			.attr('class', (d) => (d.col === 0 ? 'sub' : 'sub share'))
-			.attr('x', (d) => (d.col === 0 ? d.x0 - 7 : d.x1 + 6))
-			.attr('dy', '1.15em')
-			.text((d) => (d.col === 0 ? d.data.range : ''));
-		// Vertically center one- or two-line labels on the bar
-		label.attr('dy', (d) => (d.col === 1 ? '0.35em' : '-0.2em'));
+			.attr('class', 'sub')
+			.attr('font-size', type.cap)
+			.text((d) => d.data.range);
+		// Under each pay band, the highlighted degrees' share (filled by applyHighlight)
+		label.filter((d) => d.col === 2).append('tspan').attr('class', 'share');
+		label.selectAll('tspan').attr('x', (d) => (d.col === 0 ? d.x0 - 7 : d.x1 + 6));
+		stackLabels(label);
+	}
+
+	// Stacks each label's non-empty lines (name, caption, share) and centers the block on its bar.
+	function stackLabels(labels) {
+		labels.each(function (d) {
+			const lines = [...this.querySelectorAll('tspan')].filter((t) => t.textContent);
+			const size = (t) => (t.classList.contains('sub') ? type.cap : type.name);
+			const lineH = (t) => size(t) * (t.classList.contains('sub') ? 1.3 : 1.2);
+			let y = (d.y0 + d.y1) / 2 - d3.sum(lines, lineH) / 2;
+			for (const t of lines) {
+				t.setAttribute('y', y + lineH(t) / 2 + 0.35 * size(t));
+				y += lineH(t);
+			}
+		});
 	}
 
 	function applyHighlight(hl, picked) {
@@ -225,6 +266,7 @@
 		svg.selectAll('tspan.share').text((d) =>
 			shares && shares[d.data.key] != null ? `${fmtPct(shares[d.data.key], 0)}${d.data.key === 4 ? ' of degrees' : ''}` : ''
 		);
+		stackLabels(svg.selectAll('g.node .label'));
 	}
 
 	function nodeTip(d) {
@@ -234,24 +276,32 @@
 			['Share of all degrees', fmtPct(share)]
 		];
 		if (d.col === 0) rows.unshift(['Colleges', `${fmtInt(d.data.schools)} (${d.data.range})`]);
+		if (d.col === 2 && d.data.range) rows.unshift(['Program median pay', d.data.range]);
 		if (d.col !== 2) {
 			const s = bandShares(flow.rows, d.col === 0 ? (r) => r.b === d.data.key : (r) => r.f === d.data.key);
-			rows.push([`Pay ${flow.bands[3].name}`, fmtPct(s[3], 0)], [`Pay ${lowerFirst(flow.bands[0].name)}`, fmtPct(s[0], 0)]);
+			rows.push(
+				[`Pay in the ${flow.bands[3].name} percentile`, fmtPct(s[3], 0)],
+				[`Pay in the ${flow.bands[0].name} percentile`, fmtPct(s[0], 0)]
+			);
 		}
 		return {
-			title: d.col === 0 ? `${d.data.name} of colleges by price` : d.col === 2 ? `Pay ${lowerFirst(d.data.name)}` : nodeName(d),
+			title:
+				d.col === 0
+					? `Colleges in the ${d.data.name} percentile by price`
+					: d.col === 2
+						? d.data.range ? `Pay in the ${d.data.name} percentile` : 'Pay not reported'
+						: nodeName(d),
 			rows,
 			note: `Click to highlight ${d.col === 2 ? 'the degrees that end here' : 'its graduates'}.${d.col === 1 && d.data.key !== 'other' ? ' Also selects its most common major in the earnings chart below.' : ''}`
 		};
 	}
 
 	function linkTip(d) {
-		const from = d.source.col === 0 ? `${d.source.data.name} (${d.source.data.range})` : nodeName(d.source);
 		return {
-			title: `${from} → ${d.target.col === 2 ? `pay ${lowerFirst(d.target.data.name)}` : nodeName(d.target)}`,
+			title: `${longName(d.source)} → ${longName(d.target)}`,
 			rows: [
 				["Bachelor's degrees", fmtInt(d.value)],
-				[`Share of ${from}'s degrees`, fmtPct(d.value / d.source.value)]
+				[`Share of ${d.source.col === 0 ? 'these colleges' : nodeName(d.source)}'s degrees`, fmtPct(d.value / d.source.value)]
 			]
 		};
 	}
@@ -294,7 +344,7 @@
 	}
 	.chart :global(g.node .sub) {
 		font-weight: 400;
-		fill: var(--ink-2);
+		fill: var(--ink-3);
 	}
 	.chart :global(g.node .share) {
 		font-weight: 700;

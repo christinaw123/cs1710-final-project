@@ -118,15 +118,18 @@ try {
 	check('reset removes selected-range marks', selAfterReset === 0);
 
 	// Empty selection via the typed range inputs
-	await page.evaluate(() => {
-		const set = (id, v) => {
+	// Type the range into the step-1 filter bar: open its tuition chip, then fill both inputs
+	await page.evaluate(async (lo, hi) => {
+		const frame = () => new Promise((r) => setTimeout(r, 50));
+		document.querySelector('[data-testid="cost-tuition"]')?.click();
+		await frame();
+		for (const [id, v] of [['cost-range-lo', lo], ['cost-range-hi', hi]]) {
 			const el = document.getElementById(id);
 			el.value = v;
 			el.dispatchEvent(new Event('change', { bubbles: true }));
-		};
-		set('range-lo', '59600');
-		set('range-hi', '59700');
-	});
+			await frame();
+		}
+	}, '59600', '59700');
 	await new Promise((r) => setTimeout(r, 300));
 	const emptyMsg = await page.$eval('#earnings', (el) => el.textContent.includes('No schools'));
 	check('empty tuition range shows an empty-state message', emptyMsg);

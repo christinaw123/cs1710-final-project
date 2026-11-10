@@ -6,6 +6,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { MIN_PROGRAMS_FOR_INTERVAL, fmtInt, fmtPct, fmtUSD, fmtUSDk } from '$lib/data/summarize.js';
 	import { createTooltip } from './tooltip.js';
+	import { COLLEGE_GLYPHS, collegePath } from './collegeMarks.js';
 
 	let {
 		rows, // [{ cip, title, nat, sel }] in display order; nat/sel are summarizeMajors entries
@@ -15,8 +16,7 @@
 		rowHeight = 38, // wide layout row height; the page shrinks it so the chart fits a sticky slot
 		emphasis = null, // scroll-story highlight: CIPs kept at full strength; other rows dimmed, not removed
 		selectedMajor = null,
-		schoolEarn = null, // Map cip -> { earn, note } for the searched school
-		schoolName = null,
+		colleges = [], // chosen colleges: [{ name, mark, earn: Map cip -> program }], up to three
 		onselect
 	} = $props();
 
@@ -38,7 +38,7 @@
 
 	$effect(() => {
 		if (!width || !svgEl) return;
-		draw(rows, hasRange, selectedMajor, schoolEarn, width, height, compact, rowH);
+		draw(rows, hasRange, selectedMajor, colleges, width, height, compact, rowH);
 	});
 
 	// Emphasis only toggles classes on existing rows, so story steps never redraw the chart.
@@ -56,7 +56,7 @@
 		return s.length > n ? s.slice(0, n - 1) + '…' : s;
 	}
 
-	function draw(rows, hasRange, selectedMajor, schoolEarn, width, height, compact, rowH) {
+	function draw(rows, hasRange, selectedMajor, colleges, width, height, compact, rowH) {
 		const labelW = compact ? Math.max(110, Math.min(170, width * 0.36)) : Math.min(250, Math.max(170, width * 0.27));
 		const shareW = compact ? 0 : 104;
 		const plotX0 = compact ? labelW + 12 : labelW + shareW + 24;
@@ -162,10 +162,15 @@
 				.attr('fill', 'var(--muted)')
 				.text((d) => {
 					const n = (hasRange ? d.sel : d.nat)?.n ?? 0;
-					// The searched college offers this major but has no diamond to show: say why.
-					const school = schoolEarn?.get(d.cip);
-					if (school && school.earn == null) {
-						const why = school.note === 'DUP' ? 'yours at other campus' : 'yours suppressed';
+					// A chosen college offers this major but has no mark to show: say why.
+					const hidden = colleges.filter((c) => c.earn.has(d.cip) && c.earn.get(d.cip).earn == null);
+					if (hidden.length) {
+						const why =
+							colleges.length > 1
+								? `${hidden.length} suppressed`
+								: hidden[0].earn.get(d.cip).note === 'DUP'
+									? 'yours at other campus'
+									: 'yours suppressed';
 						return truncate(`${fmtInt(n)} program${n === 1 ? '' : 's'} · ${why}`, Math.floor((labelW - 8) / 5.6));
 					}
 					return `${fmtInt(n)} program${n === 1 ? '' : 's'} report earnings`;
@@ -245,13 +250,18 @@
 				.attr('stroke', 'var(--surface)')
 				.attr('stroke-width', 2);
 			smallSample(g.filter((d) => d.sel && d.sel.n > 0 && d.sel.n < MIN_PROGRAMS_FOR_INTERVAL), (d) => d.sel, 'var(--select)');
+			// Placed on the side away from the all-schools band (and the college's diamond beside it)
+			const bandOnRight = (d) => d.nat?.n > 0 && x(d.nat.p50) > (plotX0 + plotX1) / 2;
 			g.filter((d) => !d.sel || d.sel.n === 0)
 				.append('text')
-				.attr('x', plotX1)
+				.attr('x', (d) => (bandOnRight(d) ? plotX0 + 4 : plotX1))
 				.attr('y', trackY + 4)
-				.attr('text-anchor', 'end')
+				.attr('text-anchor', (d) => (bandOnRight(d) ? 'start' : 'end'))
 				.attr('font-size', 11)
 				.attr('fill', 'var(--ink-2)')
+				.attr('paint-order', 'stroke')
+				.attr('stroke', 'var(--surface)')
+				.attr('stroke-width', 3)
 				.text('none reported in range');
 		}
 
@@ -273,16 +283,38 @@
 			.attr('stroke', 'var(--muted)')
 			.attr('stroke-width', 1.5);
 
-		// Searched school's program in this major
-		if (schoolEarn) {
-			g.filter((d) => schoolEarn.get(d.cip)?.earn != null)
+		// Each chosen college's program in this major, in its own shape. With two or three colleges each gets
+		// its own thin lane in the row, so close values sit side by side instead of on top of each other.
+		const lanes = colleges.length;
+		const laneGap = lanes > 1 ? Math.min(7, (rowH - 12) / (lanes - 1)) : 0;
+		colleges.forEach((c, i) => {
+			const laneY = trackY + (i - (lanes - 1) / 2) * laneGap;
+			const val = (d) => c.earn.get(d.cip)?.earn;
+			g.filter((d) => val(d) != null)
 				.append('path')
-				.attr('transform', (d) => `translate(${x(schoolEarn.get(d.cip).earn)},${trackY})`)
-				.attr('d', d3.symbol(d3.symbolDiamond, 90)())
+				.attr('class', 'college-mark')
+				.attr('data-mark', c.mark)
+				.attr('transform', (d) => `translate(${x(val(d))},${laneY})`)
+				.attr('d', collegePath(c.mark, lanes > 1 ? 64 : 90))
 				.attr('fill', 'var(--surface)')
 				.attr('stroke', 'var(--ink)')
 				.attr('stroke-width', 2);
-		}
+			// A mark clamped to either edge gets its own chevron just outside it, so it never reads as the edge value
+			g.filter((d) => val(d) != null && val(d) > xDomain[1])
+				.append('path')
+				.attr('class', 'school-over')
+				.attr('d', `M${plotX1 + 10},${laneY - 4}l4,4l-4,4`)
+				.attr('fill', 'none')
+				.attr('stroke', 'var(--ink)')
+				.attr('stroke-width', 1.5);
+			g.filter((d) => val(d) != null && val(d) < xDomain[0])
+				.append('path')
+				.attr('class', 'school-over')
+				.attr('d', `M${plotX0 - 10},${laneY - 4}l-4,4l4,4`)
+				.attr('fill', 'none')
+				.attr('stroke', 'var(--ink)')
+				.attr('stroke-width', 1.5);
+		});
 
 		// Direct labels for the median program (all schools), shown only on rows a story step emphasizes.
 		g.filter((d) => d.nat.n >= MIN_PROGRAMS_FOR_INTERVAL)
@@ -343,11 +375,12 @@
 			);
 		}
 		if (d.earn_nat != null) rows.push(['All graduates nationally (Scorecard)', fmtUSD(d.earn_nat)]);
-		const school = schoolEarn?.get(d.cip);
-		if (schoolName && school) {
+		for (const c of colleges) {
+			const p = c.earn.get(d.cip);
+			if (!p) continue;
 			rows.push([
-				truncate(schoolName, 32),
-				school.earn != null ? fmtUSD(school.earn) : school.note === 'DUP' ? 'shown at another campus' : 'suppressed'
+				`${COLLEGE_GLYPHS[c.mark]} ${truncate(c.name, 30)}`,
+				p.earn != null ? fmtUSD(p.earn) : p.note === 'DUP' ? 'shown at another campus' : 'suppressed'
 			]);
 		}
 		return {

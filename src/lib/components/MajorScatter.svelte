@@ -6,8 +6,9 @@
 	import { onMount } from 'svelte';
 	import { CONTROLS, controlByKey, fmtInt, fmtUSD, fmtUSDk, tuitionOf } from '$lib/data/summarize.js';
 	import { createTooltip } from './tooltip.js';
+	import { collegePath } from './collegeMarks.js';
 
-	let { points, residency, range, xMax, yDomain, nationalP50, selectedSchool = null } = $props();
+	let { points, residency, range, xMax, yDomain, nationalP50, colleges = [] } = $props(); // colleges: chosen, up to three
 
 	const height = 398;
 	const margin = { top: 34, right: 16, bottom: 46, left: 56 };
@@ -22,10 +23,10 @@
 
 	$effect(() => {
 		if (!width || !svgEl) return;
-		draw(points, residency, range, selectedSchool, width);
+		draw(points, residency, range, colleges, width);
 	});
 
-	function draw(points, residency, range, selectedSchool, width) {
+	function draw(points, residency, range, colleges, width) {
 		const innerW = width - margin.left - margin.right;
 		const innerH = height - margin.top - margin.bottom;
 		const x = d3.scaleLinear().domain([0, xMax]).range([0, innerW]);
@@ -79,18 +80,46 @@
 			.filter((p) => p.t != null);
 		const inRange = (p) => !range || (p.t >= range[0] && p.t <= range[1]);
 
+		// Earnings beyond the fixed axis are drawn at its edge as triangles (▲ above, ▼ below), so a clamped
+		// dot never reads as the edge value; the tooltip still gives the real number.
+		const edge = (p) => (p.earn > yDomain[1] ? 'up' : p.earn < yDomain[0] ? 'down' : null);
+		const fill = (p) => controlByKey.get(p.school.control).color;
 		root
 			.append('g')
 			.selectAll('circle')
-			.data(pts)
+			.data(pts.filter((p) => !edge(p)))
 			.join('circle')
 			.attr('cx', (p) => x(p.t))
 			.attr('cy', (p) => y(p.earn))
 			.attr('r', 3.5)
-			.attr('fill', (p) => controlByKey.get(p.school.control).color)
+			.attr('fill', fill)
 			.attr('stroke', 'var(--surface)')
 			.attr('stroke-width', 1)
 			.attr('opacity', (p) => (inRange(p) ? 0.85 : 0.15));
+		const clamped = pts.filter(edge);
+		root
+			.append('g')
+			.selectAll('path')
+			.data(clamped)
+			.join('path')
+			.attr('transform', (p) => `translate(${x(p.t)},${y(p.earn)})${edge(p) === 'down' ? ' rotate(180)' : ''}`)
+			.attr('d', d3.symbol(d3.symbolTriangle, 36)())
+			.attr('fill', fill)
+			.attr('stroke', 'var(--surface)')
+			.attr('stroke-width', 1)
+			.attr('opacity', (p) => (inRange(p) ? 0.85 : 0.15));
+		if (clamped.length) {
+			const n = (dir) => clamped.filter((p) => edge(p) === dir).length;
+			const part = (dir, sym, word, v) => (n(dir) ? `${sym} ${fmtInt(n(dir))} ${word} ${fmtUSDk(v)}` : null);
+			root
+				.append('text')
+				.attr('x', innerW)
+				.attr('y', innerW < 460 ? -6 : -20)
+				.attr('text-anchor', 'end')
+				.attr('font-size', 11)
+				.attr('fill', 'var(--ink-2)')
+				.text(`${[part('up', '▲', 'above', yDomain[1]), part('down', '▼', 'below', yDomain[0])].filter(Boolean).join(' · ')}, drawn at the edge`);
+		}
 
 		// Reference: the median program in this major, all schools
 		if (nationalP50 != null) {
@@ -102,10 +131,15 @@
 				.attr('y2', y(nationalP50))
 				.attr('stroke', 'var(--ink-2)')
 				.attr('stroke-width', 1);
+			// Below the line when a chosen college's label sits on it (e.g. a major with one reporting program)
+			const clash = colleges.some((c) => {
+				const p = pts.find((q) => q.school.unitid === c.unitid);
+				return p && Math.abs(y(p.earn) - y(nationalP50)) < 16;
+			});
 			root
 				.append('text')
 				.attr('x', innerW)
-				.attr('y', y(nationalP50) - 6)
+				.attr('y', y(nationalP50) + (clash ? 22 : -6))
 				.attr('text-anchor', 'end')
 				.attr('font-size', 11)
 				.attr('fill', 'var(--ink-2)')
@@ -115,30 +149,49 @@
 				.text(`Median program, all schools: ${fmtUSD(nationalP50)}`);
 		}
 
-		const mine = selectedSchool ? pts.find((p) => p.school.unitid === selectedSchool.unitid) : null;
-		if (mine) {
-			const mx = x(mine.t);
-			const my = y(mine.earn);
+		// Chosen colleges' programs in this major: the college's shape drawn around its dot, and a label
+		const mine = colleges
+			.map((c) => ({ c, p: pts.find((q) => q.school.unitid === c.unitid) }))
+			.filter((m) => m.p)
+			.sort((a, b) => y(a.p.earn) - y(b.p.earn));
+		const taken = []; // labels already placed: { toRight, y }
+		for (const { c, p } of mine) {
+			const mx = x(p.t);
+			const my = y(p.earn);
 			root
-				.append('circle')
-				.attr('cx', mx)
-				.attr('cy', my)
-				.attr('r', 8)
+				.append('path')
+				.attr('class', 'college-ring')
+				.attr('transform', `translate(${mx},${my})`)
+				.attr('d', collegePath(c.mark, 300))
 				.attr('fill', 'none')
 				.attr('stroke', 'var(--ink)')
 				.attr('stroke-width', 2);
+			// Label on whichever side has more room, with the real earnings (the dot may sit at the clamped edge),
+			// shortened to the space it has (about 6.8px per character at 12px bold); a label that would sit on
+			// another one moves down a line.
+			const right = innerW + margin.right - mx - 14;
+			const left = mx + margin.left - 14;
+			const toRight = right >= left;
+			const value = ` · ${fmtUSD(p.earn)}`;
+			const room = Math.floor((toRight ? right : left) / 6.8) - value.length;
+			const name = c.name.length > room ? `${c.name.slice(0, Math.max(6, room - 1))}…` : c.name;
+			let ly = my + 4;
+			while (taken.some((t) => t.toRight === toRight && Math.abs(t.y - ly) < 14)) ly += 14;
+			taken.push({ toRight, y: ly });
 			root
 				.append('text')
-				.attr('x', mx + (mx > innerW * 0.6 ? -12 : 12))
-				.attr('y', my + 4)
-				.attr('text-anchor', mx > innerW * 0.6 ? 'end' : 'start')
+				.attr('x', mx + (toRight ? 14 : -14))
+				.attr('y', ly)
+				.attr('text-anchor', toRight ? 'start' : 'end')
 				.attr('font-size', 12)
 				.attr('font-weight', 600)
 				.attr('fill', 'var(--ink)')
 				.attr('paint-order', 'stroke')
 				.attr('stroke', 'var(--surface)')
 				.attr('stroke-width', 4)
-				.text(selectedSchool.name);
+				.text(name + value)
+				.append('title')
+				.text(`${c.name}${value}`);
 		}
 
 		// Nearest-point hover layer (dots are small; the pointer only needs to be closest).
