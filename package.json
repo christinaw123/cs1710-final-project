@@ -12,6 +12,7 @@
     "data:build": "python3 scripts/build_data.py",
     "data:verify": "node scripts/verify_summaries.mjs",
     "test:scrolly": "node scripts/check_scrollytelling.mjs",
+    "test:flow": "node scripts/check_flow.mjs",
     "designs": "node scripts/make_design_drafts.mjs"
   },
   "devDependencies": {

@@ -6,6 +6,8 @@
 	import {
 		CONTROLS,
 		MIN_PROGRAMS_FOR_INTERVAL,
+		bandShares,
+		flowData,
 		fmtInt,
 		fmtPct,
 		fmtUSD,
@@ -19,6 +21,7 @@
 	import EarningsByMajor from '$lib/components/EarningsByMajor.svelte';
 	import MajorScatter from '$lib/components/MajorScatter.svelte';
 	import SchoolSearch from '$lib/components/SchoolSearch.svelte';
+	import FlowSankey from '$lib/components/FlowSankey.svelte';
 	import Scrolly from '$lib/components/Scrolly.svelte';
 
 	let data = $state(null);
@@ -286,6 +289,83 @@
 		panel.scrollTo({ top: Math.max(0, (lo + hi) / 2 - panel.clientHeight / 2), behavior });
 	});
 
+	// ---- Flow chart (between the cost and earnings sections) ----
+	// Brackets are fifths of colleges by published in-state tuition, the price most of their graduates paid.
+	let flowStep = $state(null);
+	let flowStickyH = $state(0);
+	let flowPick = $state(null); // node id the reader clicked: 'b0'…'b4' price fifth, 'f14' field, 'e3' pay band
+	const flow = $derived(data ? flowData(data.programs, schoolById, majorByCip, 'in') : null);
+	const STORY_FLOW = { 1: ['b0'], 2: ['b4'], 3: ['f14', 'f42'] }; // cheapest fifth, priciest fifth, engineering + psychology
+	const keepNode = (id) => {
+		const k = id.slice(1);
+		return id[0] === 'b' ? (r) => r.b === +k : id[0] === 'f' ? (r) => r.f === k : (r) => r.e === +k;
+	};
+	const flowNodeName = (id) => {
+		const k = id.slice(1);
+		if (id[0] === 'b') {
+			const b = flow.brackets[+k];
+			return `the ${b.name.toLowerCase()} of colleges (${b.range})`;
+		}
+		if (id[0] === 'f') return flow.fields.find((f) => f.key === k)?.name.toLowerCase() ?? k;
+		const band = flow.bands[+k].name;
+		return +k === 4 ? 'degrees whose pay is not reported' : `degrees paying ${band[0].toLowerCase()}${band.slice(1)}`;
+	};
+	// Steps 1–2 narrate a price group, so they always win; afterwards the reader's click, then the story's
+	// fields, then a tuition range brushed above.
+	const flowHighlight = $derived.by(() => {
+		if (!flow) return null;
+		const story = STORY_FLOW[flowStep] ?? null;
+		const ids = flowStep === 1 || flowStep === 2 ? story : flowPick ? [flowPick] : story;
+		if (ids) {
+			const keeps = ids.map(keepNode);
+			return {
+				nodes: new Set(ids),
+				keep: (r) => keeps.some((k) => k(r)),
+				label: ids.map(flowNodeName).join(' and '),
+				shares: ids.length === 1,
+				fromPick: ids[0] === flowPick && !(flowStep === 1 || flowStep === 2)
+			};
+		}
+		if (selIds) {
+			return {
+				nodes: new Set(),
+				keep: (r) => selIds.has(r.unitid),
+				label: `colleges in your range, ${fmtUSD(range[0])}–${fmtUSD(range[1])} (${residency === 'out' ? 'out-of-state' : 'in-state'})`
+			};
+		}
+		return null;
+	});
+	function pickFlow(id) {
+		flowPick = flowPick === id ? null : id;
+		// A clicked field also selects its most common major in the earnings chart below.
+		if (flowPick?.[0] === 'f' && flowPick !== 'fother') {
+			const fam = flowPick.slice(1);
+			const pool = ranked.filter((d) => majorByCip.get(d.cip)?.cip2 === fam && (!offeredFilter || offeredFilter.has(d.cip)));
+			if (pool.length) selectedMajor = pool[0].cip;
+		}
+	}
+	// Numbers quoted in the flow story, computed from the same rows the chart draws.
+	const flowStory = $derived.by(() => {
+		if (!flow) return null;
+		const sh = (keep) => bandShares(flow.rows, keep);
+		const degIn = (b) => d3.sum(flow.rows, (r) => (r.b === b ? r.deg : 0));
+		const total = d3.sum(flow.rows, (r) => r.deg);
+		const cheap = sh((r) => r.b === 0);
+		const pricey = sh((r) => r.b === 4);
+		return {
+			perFifth: Math.round(d3.mean(flow.brackets, (b) => b.schools)),
+			cheapTwoShare: (degIn(0) + degIn(1)) / total,
+			top: flow.bands[3].name,
+			bottom: flow.bands[0].name,
+			cheap,
+			pricey,
+			engCheap: sh((r) => r.f === '14' && r.b === 0)[3],
+			engPricey: sh((r) => r.f === '14' && r.b === 4)[3],
+			psyMaxTop: d3.max([0, 1, 2, 3, 4], (b) => sh((r) => r.f === '42' && r.b === b)[3]),
+			psyBottom: sh((r) => r.f === '42')[0]
+		};
+	});
+
 	// Narrative helpers (every number comes from findings.json)
 	const gapRows = $derived(f ? [...f.tuition_quartile_gap_within_major.values].sort((a, b) => a.gap - b.gap) : []);
 	const tuitionMed = (label) => f.tuition_by_control.values[label];
@@ -483,6 +563,64 @@
 				</div>
 			{/if}
 
+		</section>
+
+		<!-- 2→3. FLOW: bridge from what college costs to what graduates earn -->
+		<section class="wrap" id="flow">
+			<p class="step ui">1 → 2 · From price to paycheck</p>
+			<h2>Where do graduates of cheap and pricey colleges end up?</h2>
+
+			<Scrolly bind:step={flowStep} class="scrolly" style="--sticky-h: {flowStickyH}px">
+				<div class="graphic">
+					<div class="sticky" bind:clientHeight={flowStickyH}>
+						<p class="flow-note ui" data-testid="flow-note" aria-live="polite">
+							{#if flowHighlight}
+								<span><span class="key-ink"></span>Highlighting {flowHighlight.label}.</span>
+								{#if flowHighlight.fromPick}<button class="chip" onclick={() => (flowPick = null)}>Clear</button>{/if}
+							{:else}
+								<span class="hint">
+									<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M5 1.5v8.2l-1.6-1.5a1.2 1.2 0 0 0-1.7 1.7L5.4 14h6.1l1.4-5.6a1.3 1.3 0 0 0-1-1.6L8 6.2V1.5a1.5 1.5 0 0 0-3 0z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>
+									Click a price group, field or pay band to follow its graduates.
+								</span>
+							{/if}
+						</p>
+						<figure class="figure">
+							<FlowSankey
+								{flow}
+								highlight={flowHighlight}
+								picked={flowPick}
+								height={vw < 600 ? 330 : Math.max(380, Math.min(480, vh - 230))}
+								onpick={pickFlow}
+							/>
+						</figure>
+					</div>
+				</div>
+				<ol class="steps" aria-label="Flow story">
+					<li class="story-step {stepState(flowStep, 0)}" data-step="0">
+						<strong>Follow the degrees.</strong> Each band is bachelor’s degrees, flowing from the college’s price, to
+						the field studied, to what that program’s graduates typically earned a year later. Each price group has about
+						{fmtInt(flowStory.perFifth)} colleges, but the cheapest two award {fmtPct(flowStory.cheapTwoShare, 0)} of the
+						degrees.
+					</li>
+					<li class="story-step {stepState(flowStep, 1)}" data-step="1">
+						<strong>The cheapest fifth of colleges.</strong> {fmtPct(flowStory.cheap[3], 0)} of their graduates’ degrees
+						with reported pay landed in the top band ({flowStory.top}), and {fmtPct(flowStory.cheap[0], 0)} in the bottom
+						band.
+					</li>
+					<li class="story-step {stepState(flowStep, 2)}" data-step="2">
+						<strong>The priciest fifth.</strong> {fmtPct(flowStory.pricey[3], 0)} reached the top band, compared with
+						{fmtPct(flowStory.cheap[3], 0)} at the cheapest fifth. Price shows up.
+					</li>
+					<li class="story-step {stepState(flowStep, 3)}" data-step="3">
+						<strong>But the field matters more.</strong> {fmtPct(flowStory.engCheap, 0)} of engineering degrees reached
+						the top band at the cheapest colleges, and {fmtPct(flowStory.engPricey, 0)} at the priciest. Psychology
+						degrees almost never did, {flowStory.psyMaxTop < 0.01 ? 'under 1%' : `at most ${fmtPct(flowStory.psyMaxTop, 0)}`}
+						at any price. So next, we look at pay major by major.
+					</li>
+				</ol>
+			</Scrolly>
+
+			<p class="notes-link ui">How the groups and pay bands are defined: <a href="#appendix-e">Appendix E</a></p>
 		</section>
 
 		<!-- 3. EARNINGS -->
@@ -818,6 +956,22 @@
 				</p>
 				<p class="back ui"><a href="#hook">↑ Back to the top</a></p>
 			</article>
+
+			<article id="appendix-e">
+				<h3>E · Flow chart</h3>
+				<p class="source ui">
+					Band width is bachelor’s degrees awarded in 2020–21 and 2021–22. Price groups are fifths of the
+					{fmtInt(f.scope.schools)} colleges by published in-state tuition and fees (each college counts once), cut at
+					{flow.edges.map((e) => fmtUSD(e)).join(', ')}; in-state is used because most graduates of public colleges paid
+					it. Fields are the {flow.fields.length - 1} largest 2-digit CIP families by degrees, with every other family under
+					“Other fields.” Pay bands are quarters of programs’ median earnings one year after graduating, weighted by
+					degrees, cut at {flow.cuts.map((c) => fmtUSD(c)).join(', ')}. “Not reported” holds programs whose earnings
+					are suppressed for privacy. Percentages next to the pay bands are shares of the highlighted degrees with
+					reported pay (for “Not reported,” of all highlighted degrees). Flows show where graduates ended up, not what
+					caused it. Source: College Scorecard.
+				</p>
+				<p class="back ui"><a href="#flow">↑ Back to the flow chart</a></p>
+			</article>
 		</section>
 	{/if}
 </main>
@@ -1148,6 +1302,34 @@
 		margin: 0 0 6px;
 		font-size: 12.5px;
 		color: var(--ink-2);
+	}
+	.flow-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 10px;
+		min-height: 24px;
+		margin: 0 0 8px;
+		font-size: 13px;
+		line-height: 1.3;
+		color: var(--ink-2);
+	}
+	.flow-note .hint {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		color: var(--ink);
+		font-weight: 600;
+	}
+	.key-ink {
+		display: inline-block;
+		width: 18px;
+		height: 8px;
+		margin-right: 6px;
+		border-radius: 2px;
+		vertical-align: middle;
+		background: var(--ink);
+		opacity: 0.62;
 	}
 	.offered-note {
 		flex-wrap: wrap;

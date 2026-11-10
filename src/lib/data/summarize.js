@@ -123,6 +123,113 @@ export function spearman(xs, ys) {
 	return num / Math.sqrt(dx * dy);
 }
 
+// ---- Flow chart: tuition fifth → field → earnings band, weighted by bachelor's degrees ----
+
+/** Short names for 2-digit CIP families (same as the design drafts); `compact` is for phones. */
+export const FIELD_NAMES = {
+	52: ['Business', 'Business'],
+	51: ['Health', 'Health'],
+	45: ['Social sciences', 'Social sci.'],
+	26: ['Biology', 'Biology'],
+	42: ['Psychology', 'Psychology'],
+	14: ['Engineering', 'Engineering'],
+	11: ['Computer science', 'Computer sci.'],
+	50: ['Visual & performing arts', 'Arts'],
+	13: ['Education', 'Education'],
+	'09': ['Communication', 'Communication'],
+	other: ['Other fields', 'Other']
+};
+export const FLOW_FIELDS = 8; // largest families by degrees get their own node; the rest are "Other fields"
+const FIFTH_NAMES = ['Cheapest fifth', '2nd fifth', 'Middle fifth', '4th fifth', 'Priciest fifth'];
+
+/**
+ * Builds the flow chart's groups and one row per program with degrees.
+ *  - brackets: fifths of schools by published tuition (each school counts once), for the given residency
+ *  - fields: the FLOW_FIELDS largest CIP families by degrees, plus "other"
+ *  - bands: degree-weighted quartiles of programs' median earnings, plus "not reported" (suppressed)
+ * Pure, so scripts can recompute the numbers quoted on the page.
+ */
+export function flowData(programs, schoolById, majorByCip, residency) {
+	const prices = [...schoolById.values()].map((s) => tuitionOf(s, residency)).filter((v) => v != null).sort(d3.ascending);
+	const edges = [0.2, 0.4, 0.6, 0.8].map((q) => d3.quantileSorted(prices, q));
+	const bracketOf = (t) => edges.filter((e) => t >= e).length;
+
+	const withDeg = programs.filter((p) => p.deg > 0 && tuitionOf(schoolById.get(p.unitid), residency) != null);
+	const famDeg = d3.rollups(withDeg, (v) => d3.sum(v, (p) => p.deg), (p) => majorByCip.get(p.cip).cip2).sort((a, b) => b[1] - a[1]);
+	const top = famDeg.slice(0, FLOW_FIELDS).map((d) => d[0]);
+
+	// Degree-weighted quartile cuts of program medians (programs that report earnings)
+	const earnRows = withDeg.filter((p) => p.earn != null).sort((a, b) => a.earn - b.earn);
+	const total = d3.sum(earnRows, (p) => p.deg);
+	const cuts = [];
+	let acc = 0;
+	for (const p of earnRows) {
+		acc += p.deg;
+		while (cuts.length < 3 && acc >= ((cuts.length + 1) * total) / 4) cuts.push(p.earn);
+	}
+	const bandOf = (e) => (e == null ? 4 : cuts.filter((c) => e >= c).length);
+
+	const rows = withDeg.map((p) => {
+		const cip2 = majorByCip.get(p.cip).cip2;
+		return {
+			unitid: p.unitid,
+			cip: p.cip,
+			deg: p.deg,
+			b: bracketOf(tuitionOf(schoolById.get(p.unitid), residency)),
+			f: top.includes(cip2) ? cip2 : 'other',
+			e: bandOf(p.earn)
+		};
+	});
+
+	const schoolsPer = d3.rollup(
+		[...schoolById.values()].filter((s) => tuitionOf(s, residency) != null),
+		(v) => v.length,
+		(s) => bracketOf(tuitionOf(s, residency))
+	);
+	const k = (v) => fmtUSDk(v);
+	const brackets = FIFTH_NAMES.map((name, i) => ({
+		key: i,
+		name,
+		range: i === 0 ? `under ${k(edges[0])}` : i === 4 ? `${k(edges[3])} or more` : `${k(edges[i - 1])}–${k(edges[i])}`,
+		lo: i === 0 ? null : edges[i - 1],
+		hi: i === 4 ? null : edges[i],
+		schools: schoolsPer.get(i) ?? 0
+	}));
+	const fields = [...top, 'other'].map((key) => {
+		const [name, compact] = FIELD_NAMES[key] ?? [majorByCip.get(withDeg.find((p) => majorByCip.get(p.cip).cip2 === key).cip).family, key];
+		return { key, name, compact };
+	});
+	const bands = [
+		{ key: 0, name: `Under ${k(cuts[0])}` },
+		{ key: 1, name: `${k(cuts[0])}–${k(cuts[1])}` },
+		{ key: 2, name: `${k(cuts[1])}–${k(cuts[2])}` },
+		{ key: 3, name: `${k(cuts[2])} or more` },
+		{ key: 4, name: 'Not reported' }
+	];
+	return { rows, brackets, fields, bands, edges, cuts };
+}
+
+/** Degrees per bracket→field and field→band link for the rows passing `keep` (all rows if null). */
+export function flowLinks(rows, keep = null) {
+	const m = new Map();
+	const add = (id, v) => m.set(id, (m.get(id) ?? 0) + v);
+	for (const r of rows) {
+		if (keep && !keep(r)) continue;
+		add(`b${r.b}|f${r.f}`, r.deg);
+		add(`f${r.f}|e${r.e}`, r.deg);
+	}
+	return m;
+}
+
+/** Share of the kept rows' degrees in each earnings band: bands 0–3 out of reported degrees, band 4 out of all. */
+export function bandShares(rows, keep) {
+	const deg = [0, 0, 0, 0, 0];
+	for (const r of rows) if (keep(r)) deg[r.e] += r.deg;
+	const reported = deg[0] + deg[1] + deg[2] + deg[3];
+	const all = reported + deg[4];
+	return deg.map((d, i) => (i < 4 ? (reported ? d / reported : null) : all ? d / all : null));
+}
+
 export const fmtUSD = (v) => (v == null || Number.isNaN(v) ? '—' : d3.format('$,.0f')(v));
 export const fmtUSDk = (v) => (v == null || Number.isNaN(v) ? '—' : d3.format('$.3~s')(v).replace('k', 'K'));
 export const fmtPct = (v, digits = 1) => (v == null || Number.isNaN(v) ? '—' : d3.format(`.${digits}%`)(v));
