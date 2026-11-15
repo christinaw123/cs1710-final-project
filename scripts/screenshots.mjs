@@ -101,7 +101,10 @@ try {
 	await new Promise((r) => setTimeout(r, 300));
 
 	// Select a major via the dropdown and capture the detail scatter
-	await page.select('#major-select', '1107');
+	// The major picker is a searchable panel: open it, type, take the first match
+	await page.click('#major-select');
+	await page.type('.picker .panel input', 'Computer Science');
+	await page.keyboard.press('Enter');
 	await new Promise((r) => setTimeout(r, 300));
 	const dots = await page.$$eval('#major-detail svg circle', (els) => els.length);
 	check('major detail scatter renders program dots', dots > 50, `${dots} dots`);

@@ -22,6 +22,7 @@
 	import MajorScatter from '$lib/components/MajorScatter.svelte';
 	import FlowSankey from '$lib/components/FlowSankey.svelte';
 	import Scrolly from '$lib/components/Scrolly.svelte';
+	import MajorPicker from '$lib/components/MajorPicker.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import CollegeMark from '$lib/components/CollegeMark.svelte';
 	import { MAX_COLLEGES } from '$lib/components/collegeMarks.js';
@@ -236,7 +237,7 @@
 		national
 			? [...national.byCip.values()]
 					.filter((d) => d.n > 0 && (!offeredFilter || offeredFilter.has(d.cip)))
-					.map((d) => ({ cip: d.cip, title: majorByCip.get(d.cip)?.title ?? d.cip }))
+					.map((d) => ({ cip: d.cip, title: majorByCip.get(d.cip)?.title ?? d.cip, family: majorByCip.get(d.cip)?.family, deg: d.deg }))
 					.sort((a, b) => d3.ascending(a.title, b.title))
 			: []
 	);
@@ -896,11 +897,7 @@
 							</div>
 							<div class="control grow">
 								<label class="label" for="major-select">Major</label>
-								<select id="major-select" bind:value={selectedMajor}>
-									{#each majorOptions as m (m.cip)}
-										<option value={m.cip}>{m.title}</option>
-									{/each}
-								</select>
+								<MajorPicker id="major-select" options={majorOptions} bind:value={selectedMajor} />
 							</div>
 						</div>
 						{#if range && selIds.size === 0}
@@ -1004,14 +1001,10 @@
 						{/if}
 					</p>
 					{#snippet majorPicker()}
-						<label class="filter-major">
-							<span>Major</span>
-							<select id="detail-major-select" bind:value={selectedMajor}>
-								{#each majorOptions as m (m.cip)}
-									<option value={m.cip}>{m.title}</option>
-								{/each}
-							</select>
-						</label>
+						<div class="filter-major">
+							<span aria-hidden="true">Major</span>
+							<MajorPicker id="detail-major-select" options={majorOptions} bind:value={selectedMajor} compact />
+						</div>
 					{/snippet}
 					{@render sharedFilters('detail', ['college', 'price', 'tuition'], majorPicker, false)}
 					<div class="legend ui" aria-hidden="true">
@@ -1379,7 +1372,7 @@
 		font-size: 12px;
 		color: var(--ink-2);
 	}
-	.control select {
+	.control :global(.picker) {
 		width: 100%;
 	}
 
@@ -1559,15 +1552,10 @@
 		color: var(--ink);
 	}
 	/* Same look as the filter bar's own controls */
-	.filter-major select {
+	.filter-major :global(.picker) {
 		flex: 1;
 		min-width: 0;
 		max-width: 360px;
-		height: 30px;
-		padding: 0 8px;
-		font-size: 13px;
-		border: 1px solid var(--axis);
-		border-radius: 8px;
 	}
 	.hint-key,
 	.key-why {

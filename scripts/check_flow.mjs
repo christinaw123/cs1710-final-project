@@ -160,7 +160,7 @@ try {
 	await page.click('#flow g.node[data-node="f11"] .bar');
 	await pause(400);
 	s = await state(page);
-	const major = await page.$eval('#major-select', (el) => el.value);
+	const major = await page.$eval('#major-select', (el) => el.closest('.picker').dataset.value);
 	check('clicking a field highlights it', s.on.join() === 'f11' && /computer science/.test(s.note), s.note);
 	check('clicking a field selects one of its majors in the earnings chart', familyOf.get(major) === '11', major);
 	const fieldShares = await page.$$eval('#flow tspan.share', (els) => els.filter((e) => e.textContent).length);

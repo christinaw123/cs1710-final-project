@@ -205,13 +205,16 @@ try {
 	await page.type('#school-search', 'Ohio State University-Main');
 	await page.waitForSelector('#school-search-list li');
 	await page.click('#school-search-list li');
-	await page.select('#major-select', '1107');
+	// The major picker is a searchable panel: open it, type, take the first match
+	await page.click('#major-select');
+	await page.type('.picker .panel input', 'Computer Science');
+	await page.keyboard.press('Enter');
 	await pause();
 	const snapshot = () =>
 		page.evaluate(() => ({
 			readout: document.querySelector('[data-testid="range-readout"]').textContent.replace(/\s+/g, ' ').trim(),
 			school: document.querySelector('#school-search').value,
-			major: document.querySelector('#major-select').value,
+			major: document.querySelector('#major-select').closest('.picker').dataset.value,
 			brush: getComputedStyle(document.querySelector('#cost .brush .selection')).display,
 			marker: !!document.querySelector('#cost .school-mark'),
 			selMarks: [...document.querySelectorAll('#earnings g.row circle')].filter(
