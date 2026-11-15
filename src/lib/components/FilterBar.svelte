@@ -41,7 +41,7 @@
 	async function openEditor() {
 		editing = true;
 		await tick();
-		rangeEl?.querySelector('input')?.focus();
+		rangeEl?.querySelector('.editor input')?.focus();
 	}
 	// The editor folds back into the chip once focus leaves it (the inputs' change events have already fired).
 	// Only focus leaving the editor's own controls counts: Chromium also reports a focus-out when the clicked
@@ -122,10 +122,11 @@
 		{/if}
 		{#if hasPrice}{@render priceToggle()}{/if}
 		{#if hasTuition}
-			<!-- The range reads as a chip and opens into inputs, so the whole bar fits on one line -->
+			<!-- The range reads as a chip and opens into inputs, so the whole bar fits on one line. Chip and editor
+			     both stay rendered in one grid cell (the hidden one invisible), so the slot is always as wide as the
+			     editor and opening it never resizes the bar. -->
 			<div class="range" class:editing bind:this={rangeEl} onfocusout={closeIfLeft}>
-				{#if editing}
-					<div class="editor" role="group" aria-label="Tuition range">
+					<div class="editor" class:ghost={!editing} inert={!editing} role="group" aria-label="Tuition range">
 						<span class="range-label" aria-hidden="true">Tuition</span>
 						<label>
 							<span aria-hidden="true">$</span><span class="sr-only">Tuition from</span>
@@ -159,8 +160,7 @@
 						{#if priceInRange}{@render priceToggle()}{/if}
 						<button class="done" onclick={() => (editing = false)}>Done</button>
 					</div>
-				{:else}
-					<div class="field" class:has-x={range}>
+					<div class="field" class:ghost={editing} inert={editing} class:has-x={range}>
 						<button
 							class="tuition"
 							class:on={range}
@@ -177,7 +177,6 @@
 							<button class="x" aria-label="Clear the tuition range" title="Clear the tuition range" onclick={() => onrange(null)}>×</button>
 						{/if}
 					</div>
-				{/if}
 			</div>
 		{/if}
 		{@render children?.()}
@@ -269,7 +268,7 @@
 	}
 	/* The price switch and the range chip keep their size; the college field is the one that gives way */
 	.segmented.res,
-	.range:not(.editing) {
+	.range {
 		flex-shrink: 0;
 	}
 	.segmented.res button {
@@ -287,13 +286,30 @@
 	.segmented.res button + button {
 		border-left: var(--ctl-border);
 	}
-	.range,
+	/* Chip and editor share one cell; whichever is hidden still holds its space */
+	.range {
+		display: grid;
+		align-items: center;
+		min-width: 0;
+	}
+	.range > .editor,
+	.range > .field {
+		grid-area: 1 / 1;
+	}
+	.ghost {
+		visibility: hidden;
+	}
 	.editor {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
 		gap: 6px;
 		min-width: 0;
+	}
+	/* Only a column too narrow for the editor's single row lets it wrap */
+	@container (max-width: 640px) {
+		.editor {
+			flex-wrap: wrap;
+		}
 	}
 	.range-label {
 		font-weight: 600;
@@ -301,6 +317,7 @@
 	}
 	.field {
 		position: relative;
+		justify-self: start;
 	}
 	.tuition {
 		display: inline-flex;
