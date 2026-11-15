@@ -80,6 +80,10 @@
 			.nodeWidth(compact ? 9 : 12)
 			.nodePadding(compact ? 7 : 10)
 			.nodeSort(null) // keep the order above: priciest→cheapest, largest field→Other, highest pay→not reported
+			// Stack the flows at each node in that same order, so the priciest quarter enters each field at the
+			// top and the best-paid band leaves it at the top. (d3-sankey's default sorts them by position mid-layout,
+			// which can leave them out of order.) Into a node the sources differ; out of a node the targets do.
+			.linkSort((a, b) => a.source.index - b.source.index || a.target.index - b.target.index)
 			.extent([
 				[labelL, top],
 				[width - labelR, height - 4]

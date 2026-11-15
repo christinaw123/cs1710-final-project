@@ -1,6 +1,6 @@
 <script>
 	import * as d3 from 'd3';
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { loadData } from '$lib/data/load.js';
 	import {
@@ -476,20 +476,6 @@
 	const gapRows = $derived(f ? [...f.tuition_quartile_gap_within_major.values].sort((a, b) => a.gap - b.gap) : []);
 	const tuitionMed = (label) => f.tuition_by_control.values[label];
 	const short = (t) => t.split(',')[0];
-
-	// Closing call to action: return to the end of the tuition story (all groups shown) and focus the search.
-	function lookUpCollege(event) {
-		const step = document.querySelector('#cost [data-step="3"]');
-		const input = document.getElementById('school-search');
-		if (!step || !input) return;
-		event.preventDefault();
-		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-		step.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-		// On short phones step 1's filters are folded into a summary line: open them first
-		const summary = input.closest('.filter-bar')?.querySelector('.summary[aria-expanded="false"]');
-		if (!input.offsetParent && summary) summary.click();
-		tick().then(() => input.focus({ preventScroll: true }));
-	}
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
@@ -653,14 +639,14 @@
 
 			<div class="bridge">
 				<p class="prose">
-					Those are two extraordinary stories, but they're outliers. 
-					Most families treat college as an investment:
-					pay tuition now for a bigger paycheck later.
+					Bezos and Huang are two extraordinary stories, and two outliers: few graduates of any college go on to found a
+					trillion-dollar company. For most families, college is an investment: pay tuition now, earn a bigger paycheck
+					later.
 				</p>
-				<h2 class="bridge-question">So what about the average student?</h2>
+				<h2 class="bridge-question">Does paying more for college pay off?</h2>
 				<p class="prose">
-					To find out, we looked at bachelor’s graduates across
-					<strong>{count(data.schools.length, 'college')}</strong>
+					To find out, we compared what <strong>{count(data.schools.length, 'college')}</strong> charge with what their
+					bachelor’s graduates earn a year after graduating.
 				</p>
 			</div>
 		</section>
@@ -1060,7 +1046,6 @@
 				Bezos and Huang didn’t need the same kind of college to reach the top. For typical graduates the data point the
 				same way: what you study matters more than what you pay.
 			</p>
-			<a class="cta ui" href="#cost" onclick={lookUpCollege}>Look up your own college ↑</a>
 		</section>
 
 		<!-- 5. APPENDIX: data notes moved out of the story so the charts stay uncluttered -->
@@ -1147,8 +1132,9 @@
 				</p>
 				<p class="source ui">
 					Rows are majors (4-digit CIP codes), ranked by bachelor’s degrees awarded at all schools. Sorting always uses the
-					all-schools values, so rows do not jump when you filter, and the earnings axis is fixed at
-					{fmtUSDk(earnDomain[0])}–{fmtUSDk(earnDomain[1])} (values beyond it are drawn at the edge and marked ›). The
+					all-schools values, so rows do not jump when you filter, and the earnings axis keeps one scale, with
+					{fmtUSDk(earnDomain[0])}–{fmtUSDk(earnDomain[1])} in view; anything beyond that (a chosen college’s program,
+					say) is reached by scrolling the chart sideways. The
 					<strong>median program</strong> is the middle value of programs’ reported medians: each program counts once
 					regardless of size, so it is not the median graduate. The <strong>middle 50%</strong> runs from the 25th to the
 					75th percentile of programs. Majors with fewer than {MIN_PROGRAMS_FOR_INTERVAL} reporting programs show
@@ -1945,23 +1931,6 @@
 		margin: 0 0 24px;
 		font-size: 21px;
 		line-height: 1.45;
-	}
-	.cta {
-		display: inline-block;
-		padding: 10px 18px;
-		font-size: 15px;
-		font-weight: 600;
-		text-decoration: none;
-		color: var(--page);
-		background: var(--ink);
-		border-radius: 999px;
-	}
-	.cta:hover {
-		opacity: 0.85;
-	}
-	.cta:focus-visible {
-		outline: 2px solid var(--accent);
-		outline-offset: 3px;
 	}
 
 	/* ---- Hook: a pinned stage. The stage never moves; each scroll step advances the story one year. ---- */

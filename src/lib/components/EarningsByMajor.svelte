@@ -2,6 +2,9 @@
 	// D3 visualization 2: for each major, the spread of programs' reported median earnings
 	// across colleges (middle 50% interval + median program), all schools vs. the selected
 	// tuition range, with the share of bachelor's degrees alongside.
+	// The earnings scale is fixed: the shared range (xDomain) fills the visible plot, and the plot carries on past
+	// either end as far as anything drawn reaches, so readers scroll sideways to see it. Major names and shares sit in
+	// their own SVG, which stays put while the plot scrolls.
 	import * as d3 from 'd3';
 	import { onMount, untrack } from 'svelte';
 	import { MIN_PROGRAMS_FOR_INTERVAL, fmtInt, fmtPct, fmtUSD, fmtUSDk } from '$lib/data/summarize.js';
@@ -21,8 +24,13 @@
 	} = $props();
 
 	let width = $state(0);
-	let svgEl;
+	let headEl; // fixed SVG: major names and share of degrees
+	let svgEl; // scrolling SVG: the earnings plot
+	let scrollEl;
 	let tooltip;
+	let view = null; // { lo, k }: the plot's lowest value and its pixels per dollar, from the last draw
+	let leftValue = null; // earnings value at the left edge of the visible plot, kept across redraws
+	let edges = $state({ left: false, right: false }); // more plot hidden to either side
 
 	// Narrow screens use compact one-line rows so the whole chart fits beside the story text.
 	const compact = $derived(width < 640);
@@ -37,7 +45,7 @@
 	});
 
 	$effect(() => {
-		if (!width || !svgEl) return;
+		if (!width || !svgEl || !headEl) return;
 		draw(rows, hasRange, selectedMajor, colleges, width, height, compact, rowH);
 	});
 
@@ -45,11 +53,44 @@
 	$effect(() => applyEmphasis(emphasis));
 
 	function applyEmphasis(cips) {
-		if (!svgEl) return;
-		d3.select(svgEl)
-			.selectAll('g.row')
+		if (!svgEl || !headEl) return;
+		d3.selectAll([headEl, svgEl])
+			.selectAll('g.head, g.row')
 			.classed('dimmed', (d) => !!cips && !cips.includes(d.cip))
 			.classed('emph', (d) => !!cips && cips.includes(d.cip));
+	}
+
+	// A row is split across the two SVGs, so hovering either half lights up both.
+	function setHover(cip, on) {
+		d3.selectAll([headEl, svgEl]).selectAll(`[data-cip="${cip}"]`).classed('hover', on);
+	}
+
+	function updateEdges() {
+		const { scrollLeft, scrollWidth, clientWidth } = scrollEl;
+		edges = { left: scrollLeft > 1, right: scrollLeft + clientWidth < scrollWidth - 1 };
+	}
+
+	function onscroll() {
+		if (view) leftValue = view.lo + scrollEl.scrollLeft / view.k;
+		updateEdges();
+	}
+
+	// Every earnings value the plot draws: each interval's ends (or each program, for small samples) and the
+	// chosen colleges' marks.
+	function drawnValues(rows, hasRange, colleges) {
+		const out = [];
+		for (const d of rows) {
+			for (const s of [d.nat, hasRange ? d.sel : null]) {
+				if (!s?.n) continue;
+				if (s.n >= MIN_PROGRAMS_FOR_INTERVAL) out.push(s.p25, s.p75);
+				else out.push(...s.earn);
+			}
+			for (const c of colleges) {
+				const v = c.earn.get(d.cip)?.earn;
+				if (v != null) out.push(v);
+			}
+		}
+		return out;
 	}
 
 	function truncate(s, n) {
@@ -61,14 +102,31 @@
 		const shareW = compact ? 0 : 104;
 		const plotX0 = compact ? labelW + 12 : labelW + shareW + 24;
 		const plotX1 = width - 14;
-		const x = d3.scaleLinear().domain(xDomain).range([plotX0, plotX1]).clamp(true);
+		// The fixed SVG ends a little short of the plot, leaving the plot room for the first tick label.
+		const gutter = compact ? 16 : 18;
+		const headW = plotX0 - gutter;
+		// xDomain fills the visible plot (plotX0 to plotX1), which sets the pixels per dollar. The plot then runs on,
+		// at that scale, out to the lowest and highest values drawn, rounded out to $10K.
+		const k = (plotX1 - plotX0) / (xDomain[1] - xDomain[0]);
+		const drawn = drawnValues(rows, hasRange, colleges);
+		const lo = drawn.length ? Math.min(xDomain[0], Math.floor(d3.min(drawn) / 10000) * 10000) : xDomain[0];
+		const hi = drawn.length ? Math.max(xDomain[1], Math.ceil(d3.max(drawn) / 10000) * 10000) : xDomain[1];
+		const x = d3.scaleLinear().domain([lo, hi]).range([gutter, gutter + (hi - lo) * k]);
+		const plotW = x(hi) + (width - plotX1);
+		// Ends of the visible plot before any scrolling, in the plot's own coordinates
+		const vx0 = x(xDomain[0]);
+		const vx1 = x(xDomain[1]);
 		const share = d3.scaleLinear().domain([0, shareMax]).range([0, shareW - 44]).clamp(true);
 		const trackY = rowH / 2; // vertical center of the earnings marks within a row
 		const twoLineLabels = !compact && rowH >= 32;
-		const svg = d3.select(svgEl).attr('width', width).attr('height', height);
+		const head = d3.select(headEl).attr('width', headW).attr('height', height);
+		const svg = d3.select(svgEl).attr('width', plotW).attr('height', height);
+		head.selectAll('*').remove();
 		svg.selectAll('*').remove();
 
-		const ticks = x.ticks(width < 480 ? 4 : 7);
+		// Same tick spacing as the visible range alone would get, continued across the whole plot
+		const step = d3.tickStep(xDomain[0], xDomain[1], width < 480 ? 4 : 7);
+		const ticks = d3.range(Math.ceil(lo / step) * step, hi + step / 2, step);
 		// Vertical gridlines + axes
 		svg
 			.append('g')
@@ -90,16 +148,8 @@
 			.attr('transform', `translate(0,${height - axisBottom})`)
 			.call(d3.axisBottom(x).tickValues(ticks).tickFormat(fmtUSDk).tickSizeOuter(0))
 			.call((g) => g.select('.domain').attr('stroke', 'var(--axis)'));
-		svg
-			.append('text')
-			.attr('x', plotX1)
-			.attr('y', height - 6)
-			.attr('text-anchor', 'end')
-			.attr('font-size', 12)
-			.attr('fill', 'var(--ink-2)')
-			.text(width < 480 ? 'Program median earnings, 1 yr (2024 $)' : "Programs' median earnings 1 year after graduating (2024 $)");
 		if (!compact) {
-			svg
+			head
 				.append('text')
 				.attr('x', labelW + 8)
 				.attr('y', axisTop - 10)
@@ -108,54 +158,68 @@
 				.text('Share of degrees');
 		}
 
-		const row = svg
-			.append('g')
-			.selectAll('g.row')
-			.data(rows, (d) => d.cip)
-			.join('g')
-			.attr('class', 'row')
-			.attr('data-cip', (d) => d.cip)
-			.attr('transform', (_, i) => `translate(0,${axisTop + i * rowH})`);
+		// Each row has two halves: g.head in the fixed SVG (name, share) and g.row in the plot (earnings)
+		const rowGroups = (parent, cls) =>
+			parent
+				.append('g')
+				.selectAll(`g.${cls}`)
+				.data(rows, (d) => d.cip)
+				.join('g')
+				.attr('class', cls)
+				.attr('data-cip', (d) => d.cip)
+				.attr('transform', (_, i) => `translate(0,${axisTop + i * rowH})`);
+		const rowHead = rowGroups(head, 'head');
+		const row = rowGroups(svg, 'row');
 
-		// Hit target / selection highlight spans the full row
-		row
-			.append('rect')
-			.attr('class', 'hit')
-			.attr('width', width)
-			.attr('height', rowH)
-			.attr('rx', 6)
-			.attr('fill', (d) => (d.cip === selectedMajor ? 'var(--select-wash)' : 'transparent'))
+		// Hit target / selection highlight spans the full row. Each half runs a little past its SVG's edge, where
+		// it is clipped, so the two halves meet square instead of showing rounded corners in the middle.
+		const hit = (sel, x0, w) =>
+			sel
+				.append('rect')
+				.attr('class', 'hit')
+				.attr('x', x0)
+				.attr('width', w)
+				.attr('height', rowH)
+				.attr('rx', 6)
+				.attr('fill', (d) => (d.cip === selectedMajor ? 'var(--select-wash)' : 'transparent'))
+				.style('cursor', 'pointer')
+				.on('click', (_, d) => onselect(d.cip))
+				.on('pointerenter', (_, d) => setHover(d.cip, true))
+				.on('pointermove', (event, d) => tooltip.show(tooltipContent(d, hasRange), event.clientX, event.clientY))
+				.on('pointerleave', (_, d) => {
+					setHover(d.cip, false);
+					tooltip.hide();
+				});
+		hit(row, -8, plotW + 8);
+		hit(rowHead, 0, headW + 8)
 			.attr('tabindex', 0)
 			.attr('role', 'button')
 			.attr('aria-label', (d) => `${d.title}: show programs in this major`)
-			.style('cursor', 'pointer')
-			.on('click', (_, d) => onselect(d.cip))
 			.on('keydown', (event, d) => {
 				if (event.key === 'Enter' || event.key === ' ') {
 					event.preventDefault();
 					onselect(d.cip);
 				}
 			})
-			.on('pointermove', (event, d) => tooltip.show(tooltipContent(d, hasRange), event.clientX, event.clientY))
-			.on('pointerleave', () => tooltip.hide())
 			.on('focus', function (event, d) {
 				const r = this.getBoundingClientRect();
-				tooltip.show(tooltipContent(d, hasRange), r.left + plotX0, r.bottom);
+				tooltip.show(tooltipContent(d, hasRange), r.left + headW, r.bottom);
 			})
 			.on('blur', () => tooltip.hide());
 
+		const lg = rowHead.append('g').attr('class', 'marks').attr('pointer-events', 'none');
 		const g = row.append('g').attr('class', 'marks').attr('pointer-events', 'none');
 
 		// Labels
-		g.append('text')
+		lg.append('text')
 			.attr('x', 8)
 			.attr('y', twoLineLabels ? rowH / 2 - 3 : rowH / 2 + 4)
 			.attr('font-size', compact ? 11.5 : 13)
 			.attr('font-weight', (d) => (d.cip === selectedMajor ? 700 : 500))
 			.attr('fill', 'var(--ink)')
-			.text((d) => truncate(d.title, Math.floor(labelW / (compact ? 6.3 : 6.9))));
+			.text((d) => truncate(d.title, Math.floor((compact ? headW - 8 : labelW) / (compact ? 6.3 : 6.9))));
 		if (twoLineLabels) {
-			g.append('text')
+			lg.append('text')
 				.attr('x', 8)
 				.attr('y', rowH / 2 + 11)
 				.attr('font-size', 11)
@@ -180,7 +244,7 @@
 		// Degree share bars (wide layout; compact rows show share in the tooltip and story labels)
 		if (!compact) {
 			const sx = labelW + 8;
-			g.append('rect')
+			lg.append('rect')
 				.attr('x', sx)
 				.attr('y', rowH / 2 - (hasRange ? 7 : 4))
 				.attr('height', hasRange ? 5 : 8)
@@ -188,7 +252,7 @@
 				.attr('rx', 2)
 				.attr('fill', hasRange ? 'var(--band-national)' : 'var(--ink-2)');
 			if (hasRange) {
-				g.append('rect')
+				lg.append('rect')
 					.attr('x', sx)
 					.attr('y', rowH / 2 + 1)
 					.attr('height', 5)
@@ -196,7 +260,7 @@
 					.attr('rx', 2)
 					.attr('fill', 'var(--select)');
 			}
-			g.append('text')
+			lg.append('text')
 				.attr('x', (d) => sx + share(Math.max(d.nat.share ?? 0, hasRange ? (d.sel?.share ?? 0) : 0)) + 5)
 				.attr('y', rowH / 2 + 4)
 				.attr('font-size', 11)
@@ -226,7 +290,7 @@
 		smallSample(g.filter((d) => d.nat.n > 0 && d.nat.n < MIN_PROGRAMS_FOR_INTERVAL), (d) => d.nat, hasRange ? 'var(--band-national-ink)' : 'var(--ink)');
 		g.filter((d) => d.nat.n === 0)
 			.append('text')
-			.attr('x', plotX0)
+			.attr('x', vx0)
 			.attr('y', trackY + 4)
 			.attr('font-size', 11)
 			.attr('fill', 'var(--muted)')
@@ -251,10 +315,10 @@
 				.attr('stroke-width', 2);
 			smallSample(g.filter((d) => d.sel && d.sel.n > 0 && d.sel.n < MIN_PROGRAMS_FOR_INTERVAL), (d) => d.sel, 'var(--select)');
 			// Placed on the side away from the all-schools band (and the college's diamond beside it)
-			const bandOnRight = (d) => d.nat?.n > 0 && x(d.nat.p50) > (plotX0 + plotX1) / 2;
+			const bandOnRight = (d) => d.nat?.n > 0 && x(d.nat.p50) > (vx0 + vx1) / 2;
 			g.filter((d) => !d.sel || d.sel.n === 0)
 				.append('text')
-				.attr('x', (d) => (bandOnRight(d) ? plotX0 + 4 : plotX1))
+				.attr('x', (d) => (bandOnRight(d) ? vx0 + 4 : vx1))
 				.attr('y', trackY + 4)
 				.attr('text-anchor', (d) => (bandOnRight(d) ? 'start' : 'end'))
 				.attr('font-size', 11)
@@ -264,24 +328,6 @@
 				.attr('stroke-width', 3)
 				.text('none reported in range');
 		}
-
-		// Values beyond the fixed axis are clamped to the edge and flagged with a chevron.
-		const over = [];
-		for (const d of rows) {
-			for (const s of [d.nat, hasRange ? d.sel : null]) {
-				if (!s || !s.n) continue;
-				// Flag only marks that are actually drawn at the edge: the interval/median, or the
-				// individual circles shown for small samples.
-				const drawn = s.n >= MIN_PROGRAMS_FOR_INTERVAL ? [s.p25, s.p50, s.p75] : s.earn;
-				if (drawn.some((v) => v > xDomain[1] || v < xDomain[0])) over.push(d.cip);
-			}
-		}
-		g.filter((d) => over.includes(d.cip))
-			.append('path')
-			.attr('d', `M${plotX1 + 3},${trackY - 4}l4,4l-4,4`)
-			.attr('fill', 'none')
-			.attr('stroke', 'var(--muted)')
-			.attr('stroke-width', 1.5);
 
 		// Each chosen college's program in this major, in its own shape. With two or three colleges each gets
 		// its own thin lane in the row, so close values sit side by side instead of on top of each other.
@@ -299,21 +345,6 @@
 				.attr('fill', 'var(--surface)')
 				.attr('stroke', 'var(--ink)')
 				.attr('stroke-width', 2);
-			// A mark clamped to either edge gets its own chevron just outside it, so it never reads as the edge value
-			g.filter((d) => val(d) != null && val(d) > xDomain[1])
-				.append('path')
-				.attr('class', 'school-over')
-				.attr('d', `M${plotX1 + 10},${laneY - 4}l4,4l-4,4`)
-				.attr('fill', 'none')
-				.attr('stroke', 'var(--ink)')
-				.attr('stroke-width', 1.5);
-			g.filter((d) => val(d) != null && val(d) < xDomain[0])
-				.append('path')
-				.attr('class', 'school-over')
-				.attr('d', `M${plotX0 - 10},${laneY - 4}l-4,4l4,4`)
-				.attr('fill', 'none')
-				.attr('stroke', 'var(--ink)')
-				.attr('stroke-width', 1.5);
 		});
 
 		// Direct labels for the median program (all schools), shown only on rows a story step emphasizes.
@@ -322,9 +353,9 @@
 			.attr('class', 'value-label')
 			.each(function (d) {
 				const text = compact ? fmtUSD(d.nat.p50) : `${fmtUSD(d.nat.p50)} median program`;
-				const fits = x(d.nat.p75) + 8 + text.length * 6.2 <= plotX1;
+				const fits = x(d.nat.p75) + 8 + text.length * 6.2 <= vx1;
 				d3.select(this)
-					.attr('x', fits ? x(Math.min(d.nat.p75, xDomain[1])) + 8 : x(Math.max(d.nat.p25, xDomain[0])) - 8)
+					.attr('x', fits ? x(d.nat.p75) + 8 : x(d.nat.p25) - 8)
 					.attr('text-anchor', fits ? 'start' : 'end')
 					.text(text);
 			})
@@ -336,6 +367,9 @@
 			.attr('stroke', 'var(--surface)')
 			.attr('stroke-width', 4);
 
+		view = { lo, k };
+		scrollEl.scrollLeft = ((leftValue ?? xDomain[0]) - lo) * k;
+		updateEdges();
 		applyEmphasis(untrack(() => emphasis));
 
 		function smallSample(sel, get, color) {
@@ -392,14 +426,85 @@
 </script>
 
 <div class="chart" bind:clientWidth={width}>
-	<svg bind:this={svgEl} role="group" aria-label="Earnings by major: one row per major"></svg>
+	<svg class="heads" bind:this={headEl} role="group" aria-label="Majors: choose one to see its programs"></svg>
+	<div class="plot" class:more-left={edges.left} class:more-right={edges.right}>
+		<div class="scroller" bind:this={scrollEl} {onscroll}>
+			<svg bind:this={svgEl} role="group" aria-label="Earnings by major: one row per major"></svg>
+		</div>
+	</div>
+	<!-- Outside the scroller so it stays put; sits where the axis title always has, under the visible range -->
+	<span class="axis-title" style:top="{height - 17}px">
+		{width < 480 ? 'Program median earnings, 1 yr (2024 $)' : 'Programs’ median earnings 1 year after graduating (2024 $)'}
+	</span>
 </div>
 
 <style>
 	.chart {
 		width: 100%;
+		display: flex;
+		align-items: flex-start;
+		position: relative;
 	}
-	.chart :global(rect.hit:hover) {
+	/* Clipped, so each row's hit area ends square where the plot's begins */
+	.chart svg.heads {
+		flex: none;
+		overflow: hidden;
+	}
+	.plot {
+		position: relative;
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	.scroller {
+		overflow-x: auto;
+		overflow-y: hidden;
+		overscroll-behavior-x: contain;
+	}
+	/* A thin scrollbar that stays visible (macOS hides overlay scrollbars until you scroll), so the extra range is findable */
+	.scroller::-webkit-scrollbar {
+		height: 8px;
+	}
+	.scroller::-webkit-scrollbar-thumb {
+		background: var(--axis);
+		border-radius: 4px;
+	}
+	.scroller::-webkit-scrollbar-thumb:hover {
+		background: var(--muted);
+	}
+	/* Fades at an edge with more plot past it */
+	.plot::before,
+	.plot::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 8px;
+		width: 24px;
+		pointer-events: none;
+		opacity: 0;
+		z-index: 1;
+	}
+	.plot::before {
+		left: 0;
+		background: linear-gradient(to right, var(--surface), transparent);
+	}
+	.plot::after {
+		right: 0;
+		background: linear-gradient(to left, var(--surface), transparent);
+	}
+	.plot.more-left::before,
+	.plot.more-right::after {
+		opacity: 1;
+	}
+	.axis-title {
+		position: absolute;
+		right: 14px;
+		font-size: 12px;
+		line-height: 1;
+		white-space: nowrap;
+		color: var(--ink-2);
+		pointer-events: none;
+	}
+	.chart :global(g.hover > rect.hit) {
 		fill: var(--wash);
 	}
 	.chart :global(rect.hit:focus-visible) {
@@ -408,7 +513,8 @@
 		stroke-width: 2;
 	}
 	/* Story emphasis: dimmed rows stay in place (and stay hoverable), they are not filtered out. */
-	.chart :global(g.row.dimmed > g.marks) {
+	.chart :global(g.row.dimmed > g.marks),
+	.chart :global(g.head.dimmed > g.marks) {
 		opacity: 0.2;
 	}
 	.chart :global(g.row .value-label) {
@@ -419,6 +525,7 @@
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.chart :global(g.row > g.marks),
+		.chart :global(g.head > g.marks),
 		.chart :global(g.row .value-label) {
 			transition: opacity 250ms ease;
 		}

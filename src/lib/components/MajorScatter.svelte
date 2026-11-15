@@ -1,7 +1,7 @@
 <script>
 	// Linked detail for visualization 2: every program in one major, placed by its school's
-	// published tuition (same x scale as the histogram) and its reported median earnings
-	// (same earnings scale as the major chart).
+	// published tuition (same x scale as the histogram) and its reported median earnings (the major
+	// chart's earnings scale, stretched as far as this major's programs reach so none is clipped).
 	import * as d3 from 'd3';
 	import { onMount } from 'svelte';
 	import { CONTROLS, controlByKey, fmtInt, fmtUSD, fmtUSDk, tuitionOf } from '$lib/data/summarize.js';
@@ -29,8 +29,17 @@
 	function draw(points, residency, range, colleges, width) {
 		const innerW = width - margin.left - margin.right;
 		const innerH = height - margin.top - margin.bottom;
+		const pts = points
+			.map((p) => ({ ...p, t: tuitionOf(p.school, residency) }))
+			.filter((p) => p.t != null);
 		const x = d3.scaleLinear().domain([0, xMax]).range([0, innerW]);
-		const y = d3.scaleLinear().domain(yDomain).range([innerH, 0]).clamp(true);
+		// Start from the shared earnings axis and widen it, in $10K steps, to take in this major's lowest and
+		// highest programs, so every dot sits at its real value.
+		const [lo, hi] = d3.extent(pts, (p) => p.earn);
+		const y = d3
+			.scaleLinear()
+			.domain([Math.min(yDomain[0], Math.floor(lo / 10000) * 10000), Math.max(yDomain[1], Math.ceil(hi / 10000) * 10000)])
+			.range([innerH, 0]);
 		const svg = d3.select(svgEl).attr('width', width).attr('height', height);
 		svg.selectAll('*').remove();
 		const root = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
@@ -75,51 +84,20 @@
 				.attr('fill', 'var(--select-wash)');
 		}
 
-		const pts = points
-			.map((p) => ({ ...p, t: tuitionOf(p.school, residency) }))
-			.filter((p) => p.t != null);
 		const inRange = (p) => !range || (p.t >= range[0] && p.t <= range[1]);
 
-		// Earnings beyond the fixed axis are drawn at its edge as triangles (▲ above, ▼ below), so a clamped
-		// dot never reads as the edge value; the tooltip still gives the real number.
-		const edge = (p) => (p.earn > yDomain[1] ? 'up' : p.earn < yDomain[0] ? 'down' : null);
-		const fill = (p) => controlByKey.get(p.school.control).color;
 		root
 			.append('g')
 			.selectAll('circle')
-			.data(pts.filter((p) => !edge(p)))
+			.data(pts)
 			.join('circle')
 			.attr('cx', (p) => x(p.t))
 			.attr('cy', (p) => y(p.earn))
 			.attr('r', 3.5)
-			.attr('fill', fill)
+			.attr('fill', (p) => controlByKey.get(p.school.control).color)
 			.attr('stroke', 'var(--surface)')
 			.attr('stroke-width', 1)
 			.attr('opacity', (p) => (inRange(p) ? 0.85 : 0.15));
-		const clamped = pts.filter(edge);
-		root
-			.append('g')
-			.selectAll('path')
-			.data(clamped)
-			.join('path')
-			.attr('transform', (p) => `translate(${x(p.t)},${y(p.earn)})${edge(p) === 'down' ? ' rotate(180)' : ''}`)
-			.attr('d', d3.symbol(d3.symbolTriangle, 36)())
-			.attr('fill', fill)
-			.attr('stroke', 'var(--surface)')
-			.attr('stroke-width', 1)
-			.attr('opacity', (p) => (inRange(p) ? 0.85 : 0.15));
-		if (clamped.length) {
-			const n = (dir) => clamped.filter((p) => edge(p) === dir).length;
-			const part = (dir, sym, word, v) => (n(dir) ? `${sym} ${fmtInt(n(dir))} ${word} ${fmtUSDk(v)}` : null);
-			root
-				.append('text')
-				.attr('x', innerW)
-				.attr('y', innerW < 460 ? -6 : -20)
-				.attr('text-anchor', 'end')
-				.attr('font-size', 11)
-				.attr('fill', 'var(--ink-2)')
-				.text(`${[part('up', '▲', 'above', yDomain[1]), part('down', '▼', 'below', yDomain[0])].filter(Boolean).join(' · ')}, drawn at the edge`);
-		}
 
 		// Reference: the median program in this major, all schools
 		if (nationalP50 != null) {
@@ -166,8 +144,7 @@
 				.attr('fill', 'none')
 				.attr('stroke', 'var(--ink)')
 				.attr('stroke-width', 2);
-			// Label on whichever side has more room, with the real earnings (the dot may sit at the clamped edge),
-			// shortened to the space it has (about 6.8px per character at 12px bold); a label that would sit on
+			// Label on whichever side has more room, with the program's earnings, shortened to the space it has (about 6.8px per character at 12px bold); a label that would sit on
 			// another one moves down a line.
 			const right = innerW + margin.right - mx - 14;
 			const left = mx + margin.left - 14;
@@ -225,7 +202,7 @@
 							['Bachelor’s degrees (2 yrs)', fmtInt(p.deg)],
 							['Type', CONTROLS.find((c) => c.key === p.school.control).label]
 						],
-						note: `${p.school.city}, ${p.school.state}${p.earn > yDomain[1] || p.earn < yDomain[0] ? ' · drawn at the edge of the axis' : ''}`
+						note: `${p.school.city}, ${p.school.state}`
 					},
 					event.clientX,
 					event.clientY
