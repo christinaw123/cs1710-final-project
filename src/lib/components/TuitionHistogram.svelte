@@ -16,6 +16,7 @@
 		colleges = [], // chosen colleges (school fields + display name + shape index `mark`), up to three
 		height = 300,
 		emphasis = null, // scroll-story highlight: control keys kept in color; others are grayed, not removed
+		plain = false, // first story step: one neutral color, so the reader learns the chart before the school types
 		onrange, // committed range: called once when a drag ends, since every chart recomputes from it
 		onbrushing = null // live range while dragging, for a readout that keeps up with the pointer
 	} = $props();
@@ -54,7 +55,7 @@
 
 	$effect(() => {
 		if (!width || !svgEl) return;
-		draw(bins[residency], range, colleges, width, height);
+		draw(bins[residency], range, colleges, width, height, plain);
 	});
 
 	// Emphasis only restyles existing bars, so story steps never redraw the chart or move the brush.
@@ -73,7 +74,7 @@
 		return `M${x0},${yBottom}V${yTop + rr}Q${x0},${yTop} ${x0 + rr},${yTop}H${x1 - rr}Q${x1},${yTop} ${x1},${yTop + rr}V${yBottom}Z`;
 	}
 
-	function draw(binData, range, colleges, width, height) {
+	function draw(binData, range, colleges, width, height, plain) {
 		const innerW = width - margin.left - margin.right;
 		const innerH = height - margin.top - margin.bottom;
 		const x = d3.scaleLinear().domain([0, xMax]).range([0, innerW]);
@@ -152,7 +153,7 @@
 			const present = CONTROLS.filter((c) => b.counts[c.key] > 0);
 			present.forEach((c, j) => {
 				const n = b.counts[c.key];
-				const yBottom = y(cum) - (j > 0 ? GAP : 0);
+				const yBottom = y(cum) - (j > 0 && !plain ? GAP : 0); // plain bars read as one solid stack
 				const yTop = Math.min(y(cum + n), yBottom - 1);
 				segs.push({ bin: b, control: c, n, yBottom, yTop, isTop: j === present.length - 1 });
 				cum += n;
@@ -292,11 +293,15 @@
 </script>
 
 <div class="legend ui" aria-hidden="true">
-	{#each CONTROLS as c (c.key)}
-		<span class="key" class:dimmed={emphasis && !emphasis.includes(c.key)}>
-			<span class="swatch" style:background={c.color}></span>{c.label}
-		</span>
-	{/each}
+	{#if plain}
+		<span class="key"><span class="swatch plain-swatch"></span>Colleges (all types)</span>
+	{:else}
+		{#each CONTROLS as c (c.key)}
+			<span class="key" class:dimmed={emphasis && !emphasis.includes(c.key)}>
+				<span class="swatch" style:background={c.color}></span>{c.label}
+			</span>
+		{/each}
+	{/if}
 	{#if colleges.length === 1}
 		<span class="key"><CollegeMark index={colleges[0].mark} />Your school</span>
 	{:else}
@@ -312,7 +317,7 @@
 		<span><span class="fade-key"></span>Faded bars fall outside your selected tuition range.</span>
 	</p>
 {/if}
-<div class="chart" bind:clientWidth={width} style:min-height="{height}px">
+<div class="chart" class:plain bind:clientWidth={width} style:min-height="{height}px">
 	<svg bind:this={svgEl} role="img" aria-label={ariaLabel}></svg>
 </div>
 
@@ -363,6 +368,13 @@
 	}
 	.chart :global(g.bars path.dimmed) {
 		fill: var(--dim);
+	}
+	/* Plain mode: every segment shares one color, so the stacks read as single bars */
+	.chart.plain :global(g.bars path) {
+		fill: var(--ink-3);
+	}
+	.plain-swatch {
+		background: var(--ink-3);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.chart :global(g.bars path) {
