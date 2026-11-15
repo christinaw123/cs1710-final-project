@@ -46,6 +46,7 @@
 	// Scroll-story state: one authoritative step index per section, written only by Scrollama.
 	// It drives *emphasis* (what is dimmed for narration) and never touches the user selections above.
 	let tuitionStep = $state(null);
+	let bridgeStep = $state(null); // which bridge panel is showing (null before the reader reaches it)
 	let earningsStep = $state(null);
 	let vw = $state(1200);
 	let vh = $state(900);
@@ -322,6 +323,9 @@
 	// Story emphasis derived from the step index (null = no emphasis, all groups at full strength).
 	const STORY_CIP = { business: '5202', nursing: '5138', english: '2301' };
 	const tuitionEmphasis = $derived(tuitionStep === 1 ? [1] : tuitionStep === 2 ? [2] : null);
+	// The cost story introduces one thing at a time: the bare chart first, then school types, then the filters.
+	const tuitionPlain = $derived(tuitionStep === null || tuitionStep === 0);
+	const tuitionControlsOn = $derived((tuitionStep ?? 0) >= 3 || colleges.length > 0 || range != null);
 	const earningsEmphasis = $derived(
 		earningsStep === 1 ? [STORY_CIP.business] : earningsStep === 2 ? [STORY_CIP.nursing, STORY_CIP.english] : null
 	);
@@ -344,6 +348,7 @@
 		return {
 			tMin: all[0],
 			tMax: all.at(-1),
+			tMed: d3.quantileSorted(all, 0.5),
 			t05: d3.quantileSorted(all, 0.05),
 			t95: d3.quantileSorted(all, 0.95),
 			pubN: pub.length,
@@ -632,36 +637,63 @@
 				</div>
 			</Scrolly>
 
-			<div class="hook-end">
-				<p class="hook-sum">Different people. Different journeys. Very different colleges. Both are now among the ten richest people on Earth.</p>
-				<p class="hook-q">So does the college you go to matter?</p>
+			<!-- Bridge: one idea per screen. The stage stays pinned and the panels cross-fade as the invisible steps pass. -->
+			<Scrolly bind:step={bridgeStep} class="bridge-scroller">
+			<div class="bridge-stage">
+				<!-- Each panel gives the context first (small) and lands on the question it raises (big) -->
+				<div class="panel" class:shown={(bridgeStep ?? 0) === 0} aria-hidden={(bridgeStep ?? 0) !== 0}>
+					<div class="panel-body">
+						<p class="panel-insight">
+							Different people. Different journeys. Very different colleges. Both are now among the ten richest
+							people on Earth.
+						</p>
+						<p class="panel-q">So does the college you go to matter?</p>
+					</div>
+				</div>
+				<div class="panel" class:shown={(bridgeStep ?? 0) === 1} aria-hidden={(bridgeStep ?? 0) !== 1}>
+					<div class="panel-body">
+						<p class="panel-insight">
+							Bezos and Huang are two extraordinary stories, and two outliers: few graduates of any college go on to
+							found a trillion-dollar company. For most families, college is an investment: pay tuition now, earn a
+							bigger paycheck later.
+						</p>
+						<h2 class="panel-q">Does paying more for college pay off?</h2>
+					</div>
+				</div>
+				<div class="panel" class:shown={(bridgeStep ?? 0) === 2} aria-hidden={(bridgeStep ?? 0) !== 2}>
+					<div class="panel-body">
+						<p class="panel-insight">
+							To find out, we compared what <strong>{count(data.schools.length, 'college')}</strong> charge with what
+							their bachelor’s graduates earn a year after graduating, in two steps:
+						</p>
+						<ol class="panel-qs" aria-label="The two questions">
+							<li><span class="roadmap-n ui">1</span>What does college cost?</li>
+							<li><span class="roadmap-n ui">2</span>What do graduates earn?</li>
+						</ol>
+					</div>
+				</div>
 			</div>
-
-			<div class="bridge">
-				<p class="prose">
-					Bezos and Huang are two extraordinary stories, and two outliers: few graduates of any college go on to found a
-					trillion-dollar company. For most families, college is an investment: pay tuition now, earn a bigger paycheck
-					later.
-				</p>
-				<h2 class="bridge-question">Does paying more for college pay off?</h2>
-				<p class="prose">
-					To find out, we compared what <strong>{count(data.schools.length, 'college')}</strong> charge with what their
-					bachelor’s graduates earn a year after graduating.
-				</p>
+			<div class="bridge-steps" aria-hidden="true">
+				{#each [0, 1, 2] as i (i)}<div class="bridge-step" data-step={i}></div>{/each}
 			</div>
+			</Scrolly>
 		</section>
 
 		<!-- 2. COST -->
 		<section class="wrap" id="cost" data-xmax={xMaxTuition}>
-			<p class="step ui">1 · What does college cost?</p>
-			<h2>Published tuition ranges widely, and the type of school explains much of it</h2>
+			<h2 class="section-q">What does college cost?</h2>
+			<p class="insight">A year of tuition can cost almost nothing, or more than {fmtUSD(Math.floor(story.tMax / 10000) * 10000)}</p>
 
 			<Scrolly bind:step={tuitionStep} class="scrolly" style="--sticky-h: {tuitionStickyH}px">
 				<div class="graphic">
 					<div class="sticky" bind:clientHeight={tuitionStickyH}>
-						{@render sharedFilters('cost', ['college', 'price', 'tuition'], null, vh < 760, 'school-search')}
+						<!-- Filters keep their space while hidden, so the chart doesn't jump when they appear -->
+						<div class="reveal" class:shown={tuitionControlsOn} inert={!tuitionControlsOn}>
+							{@render sharedFilters('cost', ['college', 'price', 'tuition'], null, vh < 760, 'school-search')}
+						</div>
 						<figure class="figure">
 							<TuitionHistogram
+								plain={tuitionPlain}
 								schools={data.schools}
 								xMax={xMaxTuition}
 								height={vw < 900 && vh < 760 ? 170 : vw < 600 ? 240 : 300}
@@ -672,7 +704,7 @@
 								onrange={(r) => (range = r)}
 								onbrushing={(r) => (brushPreview = r)}
 							/>
-							<div class="sel-line ui">
+							<div class="sel-line ui reveal" class:shown={tuitionControlsOn} inert={!tuitionControlsOn}>
 								<p data-testid="range-readout" aria-live="polite">
 									{#if readoutRange}
 										<strong>Selected: {fmtUSD(readoutRange[0])} – {fmtUSD(readoutRange[1])}</strong> · {count(readoutCount, 'school')}
@@ -687,16 +719,16 @@
 				</div>
 				<ol class="steps" aria-label="Tuition story">
 					<li class="story-step {stepState(tuitionStep, 0)}" data-step="0">
-						<strong>Prices vary widely.</strong> Across these {count(data.schools.length, 'college')}, average published
-						in-state tuition and fees ran from {fmtUSD(story.tMin)} to {fmtUSD(story.tMax)} a year. The middle 90% of
-						schools charged between {fmtUSD(story.t05)} and {fmtUSD(story.t95)}. Each bar counts schools in a $2,500
-						band.
+						<strong>How to read this chart.</strong> Each bar is a group of colleges with a similar yearly
+						tuition. The taller the bar, the more colleges charge that price. Half of the
+						{count(data.schools.length, 'college')} charge less than {fmtUSD(story.tMed)} a year, but the bars stretch
+						all the way to {fmtUSD(story.tMax)}.
 					</li>
 					<li class="story-step {stepState(tuitionStep, 1)}" data-step="1">
-						<strong><span class="swatch" style:background="var(--c-public)"></span>Public colleges cluster at the low
-							end.</strong>
-						{fmtPct(story.pubUnder15, 0)} of the {fmtInt(story.pubN)} public colleges published in-state tuition under
-						$15,000; the median was {fmtUSD(story.pubMed)}. Other schools are grayed for emphasis, not removed.
+						<strong>Why so wide? It depends on the type of school.</strong>
+						<span class="swatch" style:background="var(--c-public)"></span>Public colleges cluster at the low end:
+						{fmtPct(story.pubUnder15, 0)} of them charge in-state students under $15,000. Other schools are grayed
+						out, not removed.
 					</li>
 					<li class="story-step {stepState(tuitionStep, 2)}" data-step="2">
 						<strong><span class="swatch" style:background="var(--c-nonprofit)"></span>Private nonprofits spread across
@@ -705,9 +737,9 @@
 						$20,000 or more, but their prices ran from {fmtUSD(story.npMin)} to {fmtUSD(story.npMax)}.
 					</li>
 					<li class="story-step {stepState(tuitionStep, 3)}" data-step="3">
-						<strong>Now find your place.</strong> All three groups are back. Search for a college (or up to three to compare), switch public schools
-						to out-of-state prices, or drag across the chart to choose a tuition range. Your choices carry into the
-						charts below, where you can change them too.
+						<strong>Now find your place.</strong> All three groups are back, and the controls above the chart are now
+						on. Try searching for a college you know (or up to three to compare), or drag across the chart to pick a
+						price range. Your choices carry into the charts below.
 					</li>
 				</ol>
 			</Scrolly>
@@ -821,8 +853,8 @@
 
 		<!-- 3. EARNINGS -->
 		<section class="wrap" id="earnings">
-			<p class="step ui">2 · What do graduates earn?</p>
-			<h2>Early earnings depend heavily on the major</h2>
+			<h2 class="section-q">What do graduates earn?</h2>
+			<p class="insight">Early earnings depend heavily on the major</p>
 			<p class="prose">
 				A <em>program</em> is one major at one college. Each one reports what its graduates typically earned a year after
 				finishing.
@@ -1287,6 +1319,20 @@
 		font-size: clamp(26px, 4vw, 36px);
 		max-width: 26ch;
 		margin: 0 0 16px;
+	}
+	/* A section opens with its question, big, and the short answer beneath it, smaller */
+	h2.section-q {
+		font-size: clamp(36px, 6vw, 56px);
+		margin: 0 0 10px;
+	}
+	.insight {
+		max-width: 44ch;
+		margin: 0 0 16px;
+		font-family: var(--serif);
+		font-size: clamp(20px, 2.6vw, 26px);
+		line-height: 1.3;
+		color: var(--ink-2);
+		text-wrap: balance;
 	}
 	h3 {
 		font-size: 22px;
@@ -2165,38 +2211,130 @@
 			transform: translateY(8px);
 		}
 	}
-	.hook-end,
-	.bridge {
+	/* Bridge: a pinned full-screen stage with the panels stacked in one grid cell; only the current one is
+	   visible, and switching panels cross-fades them. The invisible steps beside it supply the scroll distance. */
+	.wrap :global(.bridge-scroller) {
+		display: grid;
+		margin-top: 6vh;
+	}
+	.bridge-stage,
+	.bridge-steps {
+		grid-area: 1 / 1;
+		min-width: 0;
+	}
+	.bridge-stage {
+		position: sticky;
+		top: 0;
+		height: 100vh;
+		height: 100svh;
+		display: grid;
+	}
+	.bridge-steps {
+		pointer-events: none;
+	}
+	.bridge-step {
+		height: 80vh;
+	}
+	.bridge-step:last-child {
+		height: 100vh;
+	}
+	.panel {
+		grid-area: 1 / 1;
+		display: grid;
+		place-items: center;
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity 350ms ease,
+			visibility 0s linear 350ms;
+	}
+	.panel.shown {
+		opacity: 1;
+		visibility: visible;
+		transition:
+			opacity 500ms ease 350ms,
+			visibility 0s;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.panel,
+		.panel.shown {
+			transition: none;
+		}
+	}
+	.panel-body {
 		max-width: 820px;
+		padding: 0 8px;
+		text-align: center;
+	}
+	.panel-q {
+		max-width: 22ch;
 		margin: 0 auto;
+		font-family: var(--serif);
+		font-size: clamp(34px, 5.5vw, 52px);
+		font-weight: 700;
+		line-height: 1.12;
+		text-wrap: balance;
 	}
-	.hook-end {
-		padding-top: 6vh;
-	}
-	.hook-sum {
-		margin: 0 0 8px;
-		font-size: 20px;
+	.panel-insight {
+		max-width: 50ch;
+		margin: 0 auto 28px;
+		font-family: var(--serif);
+		font-size: clamp(19px, 2.2vw, 23px);
+		line-height: 1.45;
 		color: var(--ink-2);
+		text-wrap: balance;
 	}
-	.hook-q {
-		margin: 0;
-		font-size: clamp(30px, 5vw, 44px);
+	.panel-insight strong {
+		color: var(--ink);
+	}
+	/* Third panel: the two questions the rest of the page answers, big, with their numbers */
+	.panel-qs {
+		list-style: none;
+		display: grid;
+		gap: 14px;
+		width: fit-content;
+		margin: 0 auto;
+		padding: 0;
+		text-align: left;
+	}
+	.panel-qs li {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		font-family: var(--serif);
+		font-size: clamp(28px, 4.4vw, 42px);
 		font-weight: 700;
 		line-height: 1.15;
 	}
-	.bridge {
-		margin-top: 64px;
-		padding-top: 32px;
-		border-top: 1px solid var(--border);
+	.panel-qs .roadmap-n {
+		width: 36px;
+		height: 36px;
+		font-size: 18px;
 	}
-	.bridge .prose {
-		margin: 0;
+	.roadmap-n {
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		background: var(--ink);
+		color: var(--page);
+		font-weight: 700;
+		font-size: 14px;
 	}
-	.bridge-question {
-		max-width: 28ch;
-		margin: 24px 0;
-		font-size: clamp(28px, 4vw, 38px);
-		line-height: 1.15;
+	/* Cost section: controls fade in at the "find your place" step */
+	.reveal {
+		opacity: 0;
+		transition: opacity 300ms ease;
+	}
+	.reveal.shown {
+		opacity: 1;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.reveal {
+			transition: none;
+		}
 	}
 	.notes-link {
 		margin: 12px 0 0;
