@@ -15,7 +15,8 @@
 	let {
 		flow, // flowData(): { rows, brackets, fields, bands }
 		highlight = null, // { groups: [{ node: id | null, keep(row) -> bool }] } or null; one color per group
-		picked = null, // node id the reader clicked (drawn with a ring)
+		picked = null, // node id(s) shown as clicked (drawn with a ring): the reader's pick, or the story's
+		interactive = true, // false during the guided story steps: bars can't be clicked until the playground step
 		height = 440,
 		onpick // (nodeId) => void
 	} = $props();
@@ -40,10 +41,21 @@
 		if (!width || !svgEl) return;
 		draw(flow, allLinks, width, height, compact);
 		applyHighlight(untrack(() => highlight), untrack(() => picked));
+		applyInteractive(untrack(() => interactive));
 	});
 
 	// Highlights only redraw the ink layer and labels, never the layout.
 	$effect(() => applyHighlight(highlight, picked));
+	$effect(() => applyInteractive(interactive));
+
+	// Bars are buttons only in the playground; in the story they're plain marks (no focus stop, no click).
+	function applyInteractive(on) {
+		if (!svgEl) return;
+		d3.select(svgEl)
+			.selectAll('g.node')
+			.attr('tabindex', on ? 0 : null)
+			.attr('role', on ? 'button' : null);
+	}
 
 	// Font sizes: group names, their dollar captions, and the column headings
 	const type = $derived(
@@ -157,8 +169,9 @@
 			.attr('tabindex', 0)
 			.attr('role', 'button')
 			.attr('aria-label', (d) => `${longName(d)}: ${fmtInt(d.value)} degrees. Highlight its graduates.`)
-			.on('click', (_, d) => onpick(d.id))
+			.on('click', (_, d) => untrack(() => interactive) && onpick(d.id))
 			.on('keydown', (event, d) => {
+				if (!untrack(() => interactive)) return;
 				if (event.key === 'Enter' || event.key === ' ') {
 					event.preventDefault();
 					onpick(d.id);
@@ -260,7 +273,7 @@
 		const groupOf = (id) => groups.findIndex((g) => g.node === id);
 		svg.selectAll('g.node')
 			.classed('on', (d) => groupOf(d.id) >= 0)
-			.classed('picked', (d) => d.id === picked)
+			.classed('picked', (d) => [picked].flat().includes(d.id))
 			.select('.bar')
 			.style('fill', (d) => (groupOf(d.id) >= 0 ? `var(--hl-${groupOf(d.id) + 1})` : null));
 
@@ -296,7 +309,10 @@
 						? d.data.range ? `Pay in the ${d.data.name} percentile` : 'Pay not reported'
 						: nodeName(d),
 			rows,
-			note: `Click to highlight ${d.col === 2 ? 'the degrees that end here' : 'its graduates'}.${d.col === 1 && d.data.key !== 'other' ? ' Also selects its most common major in the earnings chart below.' : ''}`
+			// The click instruction only applies once the bars are clickable (the playground step)
+			note: interactive
+				? `Click to highlight ${d.col === 2 ? 'the degrees that end here' : 'its graduates'}.${d.col === 1 && d.data.key !== 'other' ? ' Also selects its most common major in the earnings chart below.' : ''}`
+				: null
 		};
 	}
 
@@ -311,7 +327,7 @@
 	}
 </script>
 
-<div class="chart" bind:clientWidth={width} style:min-height="{height}px">
+<div class="chart" class:interactive bind:clientWidth={width} style:min-height="{height}px">
 	<svg bind:this={svgEl} role="group" aria-label="Flow of bachelor's degrees from college price, to field of study, to early pay"></svg>
 </div>
 
@@ -323,18 +339,18 @@
 		stroke: var(--band-national);
 		stroke-opacity: 0.85;
 	}
-	.chart :global(g.base path:hover) {
-		stroke: var(--band-national-ink);
-	}
 	.chart :global(g.base.muted path) {
 		stroke-opacity: 0.55;
 	}
 	.chart :global(g.ink path) {
 		stroke-opacity: 0.88;
 	}
+	/* Flows aren't clickable, so they keep the default cursor and don't react to hover; only bars do */
 	.chart :global(g.node) {
-		cursor: pointer;
 		outline: none;
+	}
+	.chart.interactive :global(g.node) {
+		cursor: pointer;
 	}
 	.chart :global(g.node .bar) {
 		fill: var(--ink-2);
@@ -358,9 +374,13 @@
 		text-decoration: underline;
 		text-underline-offset: 3px;
 	}
-	.chart :global(g.node:hover .bar),
-	.chart :global(g.node.picked .bar) {
+	.chart.interactive :global(g.node:hover .bar) {
 		fill: var(--ink);
+	}
+	/* A clicked bar (the reader's, or the one the story clicked for them) gets a ring */
+	.chart :global(g.node.picked .bar) {
+		stroke: var(--ink);
+		stroke-width: 2.5px;
 	}
 	.chart :global(g.node:focus-visible .bar) {
 		stroke: var(--accent);

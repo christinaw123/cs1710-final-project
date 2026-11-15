@@ -312,7 +312,7 @@ try {
 	}));
 	check(
 		'without Scrollama, all story text is readable and charts are not dimmed',
-		fallback.steps === 12 && fallback.faded === 0 && fallback.dimmed === 0, // 4 cost + 4 flow + 4 earnings steps
+		fallback.steps === 13 && fallback.faded === 0 && fallback.dimmed === 0, // 4 cost + 5 flow + 4 earnings steps
 		`${fallback.steps} steps, ${fallback.faded} faded, “${fallback.text}…”`
 	);
 } finally {

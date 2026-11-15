@@ -424,17 +424,20 @@
 		const band = flow.bands[+k];
 		return +k === 4 ? 'degrees whose pay is not reported' : `degrees in the ${band.name} pay percentile (${band.range})`;
 	};
-	// Steps 1–2 narrate a price group, so they always win; afterwards the reader's click, then the story's
-	// fields, then a tuition range brushed above.
+	// Tutorial → highlights → playground, like the cost chart: steps 1–3 "click" bars for the reader (drawn
+	// with the same ring a real click gets), and only the last step lets the reader click bars themselves.
+	const flowPlay = $derived((flowStep ?? -1) >= 4);
+	const flowStoryIds = $derived(STORY_FLOW[flowStep] ?? null);
+	const flowPicked = $derived(flowStoryIds ?? (flowPlay ? flowPick : null));
+	// The story's bars win during steps 1–3; in the playground the reader's click, then a tuition range brushed above.
 	const flowHighlight = $derived.by(() => {
 		if (!flow) return null;
-		const story = STORY_FLOW[flowStep] ?? null;
-		const ids = flowStep === 1 || flowStep === 2 ? story : flowPick ? [flowPick] : story;
+		const ids = flowStoryIds ?? (flowPlay && flowPick ? [flowPick] : null);
 		// One color group per highlighted node (the chart colors them --hl-1, --hl-2)
 		if (ids) {
 			return {
 				groups: ids.map((id) => ({ node: id, keep: keepNode(id), label: flowNodeName(id) })),
-				fromPick: ids[0] === flowPick && !(flowStep === 1 || flowStep === 2)
+				fromPick: !flowStoryIds
 			};
 		}
 		if (selIds) {
@@ -805,10 +808,10 @@
 									{#each flowHighlight.groups as g, i (g.label)}{#if i > 0}{' and '}{/if}<span class="key-hl" style:background="var(--hl-{i + 1})"></span>{g.label}{/each}.
 								</span>
 								{#if flowHighlight.fromPick}<button class="chip" onclick={() => (flowPick = null)}>Clear</button>{/if}
-							{:else}
+							{:else if flowPlay}
 								<span class="hint">
 									<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M5 1.5v8.2l-1.6-1.5a1.2 1.2 0 0 0-1.7 1.7L5.4 14h6.1l1.4-5.6a1.3 1.3 0 0 0-1-1.6L8 6.2V1.5a1.5 1.5 0 0 0-3 0z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>
-									Click a price group, field or pay band to follow its graduates.
+									Click any dark bar to follow its graduates.
 								</span>
 							{/if}
 						</p>
@@ -816,7 +819,8 @@
 							<FlowSankey
 								{flow}
 								highlight={flowHighlight}
-								picked={flowPick}
+								picked={flowPicked}
+								interactive={flowPlay}
 								height={vw < 900 && vh < 760 ? 260 : vw < 600 ? 330 : Math.max(380, Math.min(480, vh - 230 - flowFilterH))}
 								onpick={pickFlow}
 							/>
@@ -831,19 +835,27 @@
 						{fmtPct(flowStory.cheapHalfShare, 0)} of the degrees.
 					</li>
 					<li class="story-step {stepState(flowStep, 1)}" data-step="1">
-						<strong>The cheapest colleges ({flowStory.cheapest} percentile by price).</strong> {fmtPct(flowStory.cheap[3], 0)}
+						<strong>The cheapest colleges ({flowStory.cheapest} percentile by price).</strong> We’ve clicked their bar
+						on the left for you (the ringed one), so the colored flows are their graduates. {fmtPct(flowStory.cheap[3], 0)}
 						of their graduates’ degrees with reported pay landed in the top pay band ({flowStory.top.name} percentile,
 						{flowStory.top.range}), and {fmtPct(flowStory.cheap[0], 0)} in the bottom ({flowStory.bottom.name}).
 					</li>
 					<li class="story-step {stepState(flowStep, 2)}" data-step="2">
-						<strong>The priciest ({flowStory.priciest} percentile).</strong> {fmtPct(flowStory.pricey[3], 0)} reached the
+						<strong>The priciest ({flowStory.priciest} percentile).</strong> Now we’ve clicked the top bar.
+						{fmtPct(flowStory.pricey[3], 0)} reached the
 						top band, compared with {fmtPct(flowStory.cheap[3], 0)} at the cheapest. Price shows up.
 					</li>
 					<li class="story-step {stepState(flowStep, 3)}" data-step="3">
-						<strong>But the field matters more.</strong> {fmtPct(flowStory.engCheap, 0)} of engineering degrees reached
+						<strong>But the field matters more.</strong> This time we’ve clicked two fields in the middle.
+						{fmtPct(flowStory.engCheap, 0)} of engineering degrees reached
 						the top band at the cheapest colleges, and {fmtPct(flowStory.engPricey, 0)} at the priciest. Psychology
 						degrees almost never did, {flowStory.psyMaxTop < 0.01 ? 'under 1%' : `at most ${fmtPct(flowStory.psyMaxTop, 0)}`}
-						at any price. So next, we look at pay major by major.
+						at any price.
+					</li>
+					<li class="story-step {stepState(flowStep, 4)}" data-step="4">
+						<strong>Your turn.</strong> Click any dark bar (a price group on the left, a field in the middle, or a
+						pay band on the right) to follow its graduates. Click it again to clear. Next, we look at pay major by
+						major.
 					</li>
 				</ol>
 			</Scrolly>
